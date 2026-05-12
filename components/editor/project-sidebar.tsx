@@ -22,9 +22,12 @@ export function ProjectSidebar({ isOpen, onClose }: ProjectSidebarProps) {
       )}
 
       <aside
+        id="project-sidebar"
+        aria-hidden={!isOpen}
+        inert={!isOpen}
         className={cn(
           "fixed top-12 left-0 z-40 flex h-[calc(100vh-3rem)] w-72 flex-col border-r border-border bg-card transition-transform duration-200",
-          isOpen ? "translate-x-0" : "-translate-x-full"
+          isOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
         )}
       >
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
