@@ -73,16 +73,17 @@ export default function SignInPage() {
         <SignIn
           appearance={{
             elements: {
-              rootBox: "w-full max-w-[440px]",
-              cardBox: "w-full shadow-2xl shadow-black/40",
-              card: "bg-bg-surface/60 border border-border-default rounded-2xl p-8 backdrop-blur-sm",
+              rootBox: "w-full! max-w-[440px]!",
+              cardBox:
+                "w-full! shadow-2xl! shadow-black/40! transition-shadow! duration-300! hover:shadow-[0_0_40px_-8px_var(--accent-primary-dim)]!",
+              card: "bg-bg-surface/80! border! border-border-default! rounded-2xl! p-8! backdrop-blur-sm! transition-colors! duration-300! hover:border-border-subtle!",
               formFieldInput:
-                "h-14 px-4 py-4 text-sm rounded-lg bg-bg-surface border border-border-default focus:border-accent-primary",
-              formFieldLabel: "text-sm font-medium text-text-secondary mb-2",
+                "h-16! px-5! py-5! text-sm! rounded-xl! bg-bg-surface! border! border-border-default! focus:border-accent-primary!",
+              formFieldLabel: "text-sm! font-medium! text-text-secondary! mb-2!",
               formButtonPrimary:
-                "h-10 text-sm font-semibold rounded-lg tracking-wide",
+                "h-10! text-sm! font-semibold! rounded-lg! tracking-wide!",
               socialButtonsBlockButton:
-                "h-11 text-sm font-medium rounded-lg border-border-default",
+                "h-11! text-sm! font-medium! rounded-lg! border-border-default!",
             },
           }}
         />

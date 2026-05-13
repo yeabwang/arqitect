@@ -6,8 +6,8 @@ import { Sparkles, Users, FileText } from "lucide-react";
 export default function SignUpPage() {
   return (
     <div className="flex min-h-screen items-stretch bg-bg-base">
-      {/* Left panel — hidden on small screens */}
-      <div className="hidden flex-1 flex-col justify-between px-14 py-10 lg:flex">
+      {/* Left panel — hidden on small screens, 50% on large */}
+      <div className="hidden flex-1 flex-col justify-between bg-bg-surface px-14 py-10 lg:flex">
         <div className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-primary">
             <span className="text-[11px] font-bold text-bg-base">G</span>
@@ -68,9 +68,25 @@ export default function SignUpPage() {
         </p>
       </div>
 
-      {/* Right panel — Clerk form */}
-      <div className="flex flex-1 items-center justify-center p-4 lg:flex-none lg:w-[520px] lg:border-l lg:border-border-default lg:bg-bg-surface">
-        <SignUp />
+      {/* Right panel — Clerk form, 50% on large, black bg */}
+      <div className="flex flex-1 items-center justify-center bg-bg-base p-4 lg:border-l lg:border-border-default">
+        <SignUp
+          appearance={{
+            elements: {
+              rootBox: "w-full! max-w-[440px]!",
+              cardBox:
+                "w-full! shadow-2xl! shadow-black/40! transition-shadow! duration-300! hover:shadow-[0_0_40px_-8px_var(--accent-primary-dim)]!",
+              card: "bg-bg-surface/80! border! border-border-default! rounded-2xl! p-8! backdrop-blur-sm! transition-colors! duration-300! hover:border-border-subtle!",
+              formFieldInput:
+                "h-16! px-5! py-5! text-sm! rounded-xl! bg-bg-surface! border! border-border-default! focus:border-accent-primary!",
+              formFieldLabel: "text-sm! font-medium! text-text-secondary! mb-2!",
+              formButtonPrimary:
+                "h-10! text-sm! font-semibold! rounded-lg! tracking-wide!",
+              socialButtonsBlockButton:
+                "h-11! text-sm! font-medium! rounded-lg! border-border-default!",
+            },
+          }}
+        />
       </div>
     </div>
   );
