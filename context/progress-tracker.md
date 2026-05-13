@@ -4,11 +4,11 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Phase
 
-- Editor Shell (02-editor)
+- Authentication (03-auth)
 
 ## Current Goal
 
-- Create editor-navbar.tsx, project-sidebar.tsx, confirm dialog pattern ready.
+- Auth complete: proxy.ts middleware, ClerkProvider, sign-in/sign-up pages with two-panel layout, UserButton, env vars, fonts wired. Ready for next feature unit.
 
 ## Completed
 
