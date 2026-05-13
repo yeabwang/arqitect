@@ -32,6 +32,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 - Auth route protection uses `proxy.ts` with `clerkMiddleware` (Next.js 16 proxy convention, not deprecated middleware.ts).
 - Clerk `dark` base theme overridden with CSS variable references — no hardcoded colors in auth components.
+- Root layout loads `Geist` and `Geist_Mono` from `next/font/google` as `--font-geist-sans` and `--font-geist-mono` CSS variables, matching the `ui-context.md` typography spec. `globals.css` cascades `--font-sans → var(--font-geist-sans)` and `--font-mono → var(--font-geist-mono)` so Tailwind utilities `font-sans` / `font-mono` resolve correctly.
 
 ## Session Notes
 

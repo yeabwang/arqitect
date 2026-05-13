@@ -73,9 +73,9 @@ export default function SignInPage() {
         <SignIn
           appearance={{
             elements: {
-              rootBox: "w-full max-w-[420px]",
-              cardBox: "w-full shadow-none",
-              card: "bg-transparent shadow-none border-0 p-0",
+              rootBox: "w-full max-w-[440px]",
+              cardBox: "w-full shadow-2xl shadow-black/40",
+              card: "bg-bg-surface/60 border border-border-default rounded-2xl p-8 backdrop-blur-sm",
               formFieldInput:
                 "h-14 px-4 py-4 text-sm rounded-lg bg-bg-surface border border-border-default focus:border-accent-primary",
               formFieldLabel: "text-sm font-medium text-text-secondary mb-2",

@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Geist } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/ui/themes";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
+const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+});
 
 export const metadata: Metadata = {
   title: "Ghost AI",
@@ -40,7 +44,11 @@ export default function RootLayout({
     >
       <html
         lang="en"
-        className={cn("h-full antialiased", "font-sans", geist.variable)}
+        className={cn(
+          "h-full antialiased font-sans",
+          geistSans.variable,
+          geistMono.variable
+        )}
       >
         <body className="min-h-full">{children}</body>
       </html>
