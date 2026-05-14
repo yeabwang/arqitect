@@ -4,7 +4,8 @@
       "Bash(Get-ChildItem -Path \"C:\\\\ghost_ai\\\\public\" -Recurse)",
       "Bash(Select-Object FullName)",
       "Bash(npx tsc *)",
-      "Bash(npx next *)"
+      "Bash(npx next *)",
+      "Bash(npx prisma *)"
     ]
   }
 }

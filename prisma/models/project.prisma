@@ -22,7 +22,7 @@ model Project {
 model ProjectCollaborator {
   id        String   @id @default(cuid())
   projectId String
-  email     String
+  email     String   @db.Citext
   createdAt DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
