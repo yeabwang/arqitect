@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Editor home wired to real API: server-side data fetch, hook-driven mutations with navigation/refresh, slug-based room IDs. Build/lint/type passes clean.
+- Editor home wired to real API: server-side data fetch, hook-driven mutations with navigation/refresh, room-ID preview (roomIdPreview: slugified name + UUID suffix). Build/lint/type passes clean.
 
 ## Completed
 
