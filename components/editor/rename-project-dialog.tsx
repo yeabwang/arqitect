@@ -16,8 +16,8 @@ interface RenameProjectDialogProps {
   open: boolean;
   currentName: string;
   formName: string;
-  slugPreview: string;
   isLoading: boolean;
+  error?: string | null;
   onFormNameChange: (value: string) => void;
   onClose: () => void;
   onSubmit: () => void;
@@ -27,8 +27,8 @@ export function RenameProjectDialog({
   open,
   currentName,
   formName,
-  slugPreview,
   isLoading,
+  error,
   onFormNameChange,
   onClose,
   onSubmit,
@@ -44,12 +44,12 @@ export function RenameProjectDialog({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && formName.trim() && slugPreview) {
+      if (e.key === "Enter" && formName.trim() && !isLoading) {
         e.preventDefault();
         onSubmit();
       }
     },
-    [formName, slugPreview, onSubmit]
+    [formName, isLoading, onSubmit]
   );
 
   return (
@@ -69,11 +69,13 @@ export function RenameProjectDialog({
           onChange={(e) => onFormNameChange(e.target.value)}
         />
 
+        {error && <p className="text-xs text-destructive">{error}</p>}
+
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={onSubmit} disabled={isLoading || !formName.trim() || !slugPreview}>
+          <Button onClick={onSubmit} disabled={isLoading || !formName.trim()}>
             {isLoading ? "Saving..." : "Save"}
           </Button>
         </DialogFooter>

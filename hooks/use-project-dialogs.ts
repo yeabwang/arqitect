@@ -1,29 +1,44 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 
 export interface Project {
   id: string;
   name: string;
-  slug: string;
   isOwner: boolean;
 }
 
 export type DialogType = "create" | "rename" | "delete" | null;
 
-const MOCK_PROJECTS: Project[] = [
-  { id: "1", name: "E-Commerce Platform", slug: "e-commerce-platform", isOwner: true },
-  { id: "2", name: "Analytics Dashboard", slug: "analytics-dashboard", isOwner: true },
-  { id: "3", name: "Team Collaboration", slug: "team-collaboration", isOwner: false },
-  { id: "4", name: "Design System", slug: "design-system", isOwner: false },
-];
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
 
-export function useProjectDialogs() {
-  const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
+function generateSuffix(): string {
+  return crypto.randomUUID().slice(0, 6);
+}
+
+async function fetchProjects(): Promise<Project[]> {
+  const res = await fetch("/api/projects");
+  if (!res.ok) throw new Error("Failed to fetch projects");
+  return res.json();
+}
+
+export function useProjectDialogs(initialProjects: Project[] = []) {
+  const router = useRouter();
+  const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [openDialog, setOpenDialog] = useState<DialogType>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [formName, setFormName] = useState("");
+  const [slugSuffix, setSlugSuffix] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const ownedProjects = useMemo(
     () => projects.filter((p) => p.isOwner),
@@ -35,23 +50,22 @@ export function useProjectDialogs() {
     [projects]
   );
 
-  const slugPreview = useMemo(() => {
-    return formName
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-]/g, "")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "");
-  }, [formName]);
+  const roomIdPreview = useMemo(() => {
+    const base = slugify(formName);
+    if (!base) return "";
+    return slugSuffix ? `${base}-${slugSuffix}` : base;
+  }, [formName, slugSuffix]);
 
   const openCreateDialog = useCallback(() => {
     setFormName("");
+    setSlugSuffix(generateSuffix());
     setSelectedProject(null);
     setOpenDialog("create");
   }, []);
 
   const openRenameDialog = useCallback((project: Project) => {
     setFormName(project.name);
+    setSlugSuffix("");
     setSelectedProject(project);
     setOpenDialog("rename");
   }, []);
@@ -65,8 +79,78 @@ export function useProjectDialogs() {
     setOpenDialog(null);
     setSelectedProject(null);
     setFormName("");
+    setSlugSuffix("");
     setIsLoading(false);
+    setError(null);
   }, []);
+
+  const refreshProjects = useCallback(async () => {
+    const data = await fetchProjects();
+    setProjects(data);
+  }, []);
+
+  const handleCreate = useCallback(async () => {
+    if (!roomIdPreview) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: formName, id: roomIdPreview }),
+      });
+      if (!res.ok) throw new Error("Failed to create project");
+      const project = await res.json();
+      closeDialog();
+      router.push(`/editor/${project.id}`);
+    } catch {
+      setIsLoading(false);
+      setError("Failed to create project. Please try again.");
+    }
+  }, [formName, roomIdPreview, router, closeDialog]);
+
+  const handleRename = useCallback(async () => {
+    if (!selectedProject || !formName.trim()) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/projects/${selectedProject.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: formName }),
+      });
+      if (!res.ok) throw new Error("Failed to rename project");
+      const renamedId = selectedProject.id;
+      const newName = formName;
+      setProjects((prev) =>
+        prev.map((p) => (p.id === renamedId ? { ...p, name: newName } : p))
+      );
+      closeDialog();
+      refreshProjects().catch(() => {});
+    } catch {
+      setIsLoading(false);
+      setError("Failed to rename project. Please try again.");
+    }
+  }, [selectedProject, formName, refreshProjects, closeDialog]);
+
+  const handleDelete = useCallback(async () => {
+    if (!selectedProject) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/projects/${selectedProject.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete project");
+      const deletedId = selectedProject.id;
+      setProjects((prev) => prev.filter((p) => p.id !== deletedId));
+      closeDialog();
+      refreshProjects().catch(() => {});
+    } catch {
+      setIsLoading(false);
+      setError("Failed to delete project. Please try again.");
+    }
+  }, [selectedProject, refreshProjects, closeDialog]);
 
   return useMemo(
     () => ({
@@ -77,13 +161,16 @@ export function useProjectDialogs() {
       selectedProject,
       formName,
       isLoading,
-      slugPreview,
+      error,
+      roomIdPreview,
       openCreateDialog,
       openRenameDialog,
       openDeleteDialog,
       closeDialog,
       setFormName,
-      setIsLoading,
+      handleCreate,
+      handleRename,
+      handleDelete,
     }),
     [
       projects,
@@ -93,13 +180,15 @@ export function useProjectDialogs() {
       selectedProject,
       formName,
       isLoading,
-      slugPreview,
+      error,
+      roomIdPreview,
       openCreateDialog,
       openRenameDialog,
       openDeleteDialog,
       closeDialog,
-      setFormName,
-      setIsLoading,
+      handleCreate,
+      handleRename,
+      handleDelete,
     ]
   );
 }

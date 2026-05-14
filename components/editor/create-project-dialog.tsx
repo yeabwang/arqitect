@@ -14,8 +14,9 @@ import { Button } from "@/components/ui/button";
 interface CreateProjectDialogProps {
   open: boolean;
   formName: string;
-  slugPreview: string;
+  roomIdPreview: string;
   isLoading: boolean;
+  error?: string | null;
   onFormNameChange: (value: string) => void;
   onClose: () => void;
   onSubmit: () => void;
@@ -24,8 +25,9 @@ interface CreateProjectDialogProps {
 export function CreateProjectDialog({
   open,
   formName,
-  slugPreview,
+  roomIdPreview,
   isLoading,
+  error,
   onFormNameChange,
   onClose,
   onSubmit,
@@ -46,23 +48,25 @@ export function CreateProjectDialog({
             value={formName}
             onChange={(e) => onFormNameChange(e.target.value)}
           />
-          {slugPreview && (
+          {roomIdPreview && (
             <p className="text-xs text-text-muted">
-              Slug: <span className="font-mono text-text-secondary">{slugPreview}</span>
+              Room ID: <span className="font-mono text-text-secondary">{roomIdPreview}</span>
             </p>
           )}
-          {!slugPreview && formName && (
+          {!roomIdPreview && formName && (
             <p className="text-xs text-text-muted">
-              Slug: <span className="font-mono text-text-faint">waiting for valid input&hellip;</span>
+              Room ID: <span className="font-mono text-text-faint">waiting for valid input&hellip;</span>
             </p>
           )}
         </div>
+
+        {error && <p className="text-xs text-destructive">{error}</p>}
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={onSubmit} disabled={isLoading || !formName.trim() || !slugPreview}>
+          <Button onClick={onSubmit} disabled={isLoading || !formName.trim() || !roomIdPreview}>
             {isLoading ? "Creating..." : "Create"}
           </Button>
         </DialogFooter>
