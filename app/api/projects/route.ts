@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { type NextRequest } from "next/server";
 import getPrisma from "@/lib/prisma";
+import { Prisma } from "@/app/generated/prisma/client";
 
 export async function GET(_req: NextRequest) {
   const { userId } = await auth();
@@ -40,31 +41,44 @@ export async function POST(request: NextRequest) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  let body: Record<string, unknown>;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return new Response("Invalid JSON", { status: 400 });
   }
 
-  const name = typeof body.name === "string" && body.name ? body.name : "Untitled Project";
+  if (body === null || typeof body !== "object" || Array.isArray(body)) {
+    return new Response("Invalid JSON", { status: 400 });
+  }
 
-  const id = body.id;
+  const obj = body as Record<string, unknown>;
+  const name = typeof obj.name === "string" && obj.name ? obj.name : "Untitled Project";
+
+  const id = obj.id;
   if (typeof id !== "string" || !/^[a-z0-9][a-z0-9-]{0,98}([a-z0-9])?$/.test(id)) {
     return new Response("Invalid project ID", { status: 400 });
   }
 
   const prisma = await getPrisma();
-  const project = await prisma.project.create({
-    data: {
-      id,
-      ownerId: userId,
-      name,
-    },
-    include: {
-      collaborators: { select: { id: true, email: true } },
-    },
-  });
+  let project;
+  try {
+    project = await prisma.project.create({
+      data: {
+        id,
+        ownerId: userId,
+        name,
+      },
+      include: {
+        collaborators: { select: { id: true, email: true } },
+      },
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return new Response("Project ID already exists", { status: 409 });
+    }
+    throw err;
+  }
 
   return Response.json(
     {
