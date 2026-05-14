@@ -19,7 +19,7 @@ const MOCK_PROJECTS: Project[] = [
 ];
 
 export function useProjectDialogs() {
-  const [projects] = useState<Project[]>(MOCK_PROJECTS);
+  const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
   const [openDialog, setOpenDialog] = useState<DialogType>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [formName, setFormName] = useState("");
@@ -68,20 +68,38 @@ export function useProjectDialogs() {
     setIsLoading(false);
   }, []);
 
-  return {
-    projects,
-    ownedProjects,
-    sharedProjects,
-    openDialog,
-    selectedProject,
-    formName,
-    isLoading,
-    slugPreview,
-    openCreateDialog,
-    openRenameDialog,
-    openDeleteDialog,
-    closeDialog,
-    setFormName,
-    setIsLoading,
-  };
+  return useMemo(
+    () => ({
+      projects,
+      ownedProjects,
+      sharedProjects,
+      openDialog,
+      selectedProject,
+      formName,
+      isLoading,
+      slugPreview,
+      openCreateDialog,
+      openRenameDialog,
+      openDeleteDialog,
+      closeDialog,
+      setFormName,
+      setIsLoading,
+    }),
+    [
+      projects,
+      ownedProjects,
+      sharedProjects,
+      openDialog,
+      selectedProject,
+      formName,
+      isLoading,
+      slugPreview,
+      openCreateDialog,
+      openRenameDialog,
+      openDeleteDialog,
+      closeDialog,
+      setFormName,
+      setIsLoading,
+    ]
+  );
 }
