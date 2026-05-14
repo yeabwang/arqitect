@@ -120,8 +120,13 @@ export function useProjectDialogs(initialProjects: Project[] = []) {
         body: JSON.stringify({ name: formName }),
       });
       if (!res.ok) throw new Error("Failed to rename project");
-      await refreshProjects();
+      const renamedId = selectedProject.id;
+      const newName = formName;
+      setProjects((prev) =>
+        prev.map((p) => (p.id === renamedId ? { ...p, name: newName } : p))
+      );
       closeDialog();
+      refreshProjects().catch(() => {});
     } catch {
       setIsLoading(false);
       setError("Failed to rename project. Please try again.");
@@ -137,8 +142,10 @@ export function useProjectDialogs(initialProjects: Project[] = []) {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete project");
-      await refreshProjects();
+      const deletedId = selectedProject.id;
+      setProjects((prev) => prev.filter((p) => p.id !== deletedId));
       closeDialog();
+      refreshProjects().catch(() => {});
     } catch {
       setIsLoading(false);
       setError("Failed to delete project. Please try again.");

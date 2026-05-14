@@ -44,12 +44,12 @@ export function RenameProjectDialog({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && formName.trim()) {
+      if (e.key === "Enter" && formName.trim() && !isLoading) {
         e.preventDefault();
         onSubmit();
       }
     },
-    [formName, onSubmit]
+    [formName, isLoading, onSubmit]
   );
 
   return (

@@ -40,8 +40,14 @@ export async function POST(request: NextRequest) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const body = await request.json();
-  const name = body.name || "Untitled Project";
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response("Invalid JSON", { status: 400 });
+  }
+
+  const name = typeof body.name === "string" && body.name ? body.name : "Untitled Project";
 
   const id = body.id;
   if (typeof id !== "string" || !/^[a-z0-9][a-z0-9-]{0,98}([a-z0-9])?$/.test(id)) {
