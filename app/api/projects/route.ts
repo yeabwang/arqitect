@@ -43,10 +43,15 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const name = body.name || "Untitled Project";
 
+  const id = body.id;
+  if (typeof id !== "string" || !/^[a-z0-9][a-z0-9-]{0,98}([a-z0-9])?$/.test(id)) {
+    return new Response("Invalid project ID", { status: 400 });
+  }
+
   const prisma = await getPrisma();
   const project = await prisma.project.create({
     data: {
-      id: body.id,
+      id,
       ownerId: userId,
       name,
     },

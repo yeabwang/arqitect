@@ -38,6 +38,7 @@ export function useProjectDialogs(initialProjects: Project[] = []) {
   const [formName, setFormName] = useState("");
   const [slugSuffix, setSlugSuffix] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const ownedProjects = useMemo(
     () => projects.filter((p) => p.isOwner),
@@ -80,6 +81,7 @@ export function useProjectDialogs(initialProjects: Project[] = []) {
     setFormName("");
     setSlugSuffix("");
     setIsLoading(false);
+    setError(null);
   }, []);
 
   const refreshProjects = useCallback(async () => {
@@ -90,6 +92,7 @@ export function useProjectDialogs(initialProjects: Project[] = []) {
   const handleCreate = useCallback(async () => {
     if (!roomIdPreview) return;
     setIsLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/projects", {
         method: "POST",
@@ -102,12 +105,14 @@ export function useProjectDialogs(initialProjects: Project[] = []) {
       router.push(`/editor/${project.id}`);
     } catch {
       setIsLoading(false);
+      setError("Failed to create project. Please try again.");
     }
   }, [formName, roomIdPreview, router, closeDialog]);
 
   const handleRename = useCallback(async () => {
     if (!selectedProject || !formName.trim()) return;
     setIsLoading(true);
+    setError(null);
     try {
       const res = await fetch(`/api/projects/${selectedProject.id}`, {
         method: "PATCH",
@@ -119,12 +124,14 @@ export function useProjectDialogs(initialProjects: Project[] = []) {
       closeDialog();
     } catch {
       setIsLoading(false);
+      setError("Failed to rename project. Please try again.");
     }
   }, [selectedProject, formName, refreshProjects, closeDialog]);
 
   const handleDelete = useCallback(async () => {
     if (!selectedProject) return;
     setIsLoading(true);
+    setError(null);
     try {
       const res = await fetch(`/api/projects/${selectedProject.id}`, {
         method: "DELETE",
@@ -134,6 +141,7 @@ export function useProjectDialogs(initialProjects: Project[] = []) {
       closeDialog();
     } catch {
       setIsLoading(false);
+      setError("Failed to delete project. Please try again.");
     }
   }, [selectedProject, refreshProjects, closeDialog]);
 
@@ -146,6 +154,7 @@ export function useProjectDialogs(initialProjects: Project[] = []) {
       selectedProject,
       formName,
       isLoading,
+      error,
       roomIdPreview,
       openCreateDialog,
       openRenameDialog,
@@ -164,6 +173,7 @@ export function useProjectDialogs(initialProjects: Project[] = []) {
       selectedProject,
       formName,
       isLoading,
+      error,
       roomIdPreview,
       openCreateDialog,
       openRenameDialog,

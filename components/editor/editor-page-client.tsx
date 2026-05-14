@@ -43,6 +43,7 @@ export function EditorPageClient({ initialProjects }: EditorPageClientProps) {
         formName={dialogs.formName}
         roomIdPreview={dialogs.roomIdPreview}
         isLoading={dialogs.isLoading}
+        error={dialogs.error}
         onFormNameChange={dialogs.setFormName}
         onClose={dialogs.closeDialog}
         onSubmit={dialogs.handleCreate}
@@ -53,6 +54,7 @@ export function EditorPageClient({ initialProjects }: EditorPageClientProps) {
         currentName={dialogs.selectedProject?.name ?? ""}
         formName={dialogs.formName}
         isLoading={dialogs.isLoading}
+        error={dialogs.error}
         onFormNameChange={dialogs.setFormName}
         onClose={dialogs.closeDialog}
         onSubmit={dialogs.handleRename}
@@ -62,6 +64,7 @@ export function EditorPageClient({ initialProjects }: EditorPageClientProps) {
         open={dialogs.openDialog === "delete"}
         projectName={dialogs.selectedProject?.name ?? ""}
         isLoading={dialogs.isLoading}
+        error={dialogs.error}
         onClose={dialogs.closeDialog}
         onConfirm={dialogs.handleDelete}
       />

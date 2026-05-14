@@ -6,6 +6,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 let cachedPool: Pool | undefined;
+let cachedClient: Promise<PrismaClient> | undefined;
 
 async function createPrismaClient(): Promise<PrismaClient> {
   const url = process.env.DATABASE_URL;
@@ -15,7 +16,8 @@ async function createPrismaClient(): Promise<PrismaClient> {
   }
 
   if (url.startsWith("prisma+postgres://")) {
-    // @ts-expect-error - Prisma v7 types require adapter, but prisma+postgres:// works without one
+    // prisma+postgres:// requires Prisma Accelerate — no adapter needed with that transport
+    // @ts-expect-error - Prisma v7 types require adapter, but Accelerate handles the connection
     return new PrismaClient();
   }
 
@@ -41,5 +43,11 @@ export default function getPrisma(): Promise<PrismaClient> {
     return globalForPrisma.prisma;
   }
 
-  return createPrismaClient();
+  if (!cachedClient) {
+    cachedClient = createPrismaClient().catch((err) => {
+      cachedClient = undefined;
+      throw err;
+    });
+  }
+  return cachedClient;
 }
