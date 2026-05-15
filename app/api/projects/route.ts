@@ -2,17 +2,25 @@ import { auth } from "@clerk/nextjs/server";
 import { type NextRequest } from "next/server";
 import getPrisma from "@/lib/prisma";
 import { Prisma } from "@/app/generated/prisma/client";
+import { getCurrentProjectIdentity } from "@/lib/project-access";
 
-export async function GET(_req: NextRequest) {
-  const { userId } = await auth();
+export async function GET() {
+  const identity = await getCurrentProjectIdentity();
 
-  if (!userId) {
+  if (!identity.userId) {
     return new Response("Unauthorized", { status: 401 });
   }
 
   const prisma = await getPrisma();
   const projects = await prisma.project.findMany({
-    where: { ownerId: userId },
+    where: {
+      OR: [
+        { ownerId: identity.userId },
+        ...(identity.primaryEmail
+          ? [{ collaborators: { some: { email: identity.primaryEmail } } }]
+          : []),
+      ],
+    },
     orderBy: { createdAt: "desc" },
     include: {
       collaborators: { select: { id: true, email: true } },
@@ -28,7 +36,7 @@ export async function GET(_req: NextRequest) {
       canvasJsonPath: p.canvasJsonPath,
       createdAt: p.createdAt.toISOString(),
       updatedAt: p.updatedAt.toISOString(),
-      isOwner: true,
+      isOwner: p.ownerId === identity.userId,
       collaborators: p.collaborators,
     }))
   );
