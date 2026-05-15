@@ -1,4 +1,4 @@
--- CreateEnum
+-- CreateExtension
 CREATE EXTENSION IF NOT EXISTS "citext";
 
 CREATE TYPE "ProjectInvitationStatus" AS ENUM ('PENDING', 'ACCEPTED', 'DENIED');
