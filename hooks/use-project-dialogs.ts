@@ -9,6 +9,18 @@ export interface Project {
   isOwner: boolean;
 }
 
+export interface ProjectInvitation {
+  id: string;
+  email: string;
+  projectId: string;
+  projectName: string;
+  invitedById: string;
+  inviterName: string | null;
+  inviterAvatarUrl: string | null;
+  status: "PENDING";
+  createdAt: string;
+}
+
 export type DialogType = "create" | "rename" | "delete" | null;
 
 function slugify(name: string): string {
@@ -30,15 +42,40 @@ async function fetchProjects(): Promise<Project[]> {
   return res.json();
 }
 
-export function useProjectDialogs(initialProjects: Project[] = []) {
+async function fetchProjectInvitations(): Promise<ProjectInvitation[]> {
+  const res = await fetch("/api/project-invitations");
+  if (!res.ok) throw new Error("Failed to fetch project invitations");
+  return res.json();
+}
+
+async function getResponseMessage(
+  res: Response,
+  fallback: string
+): Promise<string> {
+  const message = await res.text().catch(() => "");
+  return message.trim() || fallback;
+}
+
+export function useProjectDialogs(
+  initialProjects: Project[] = [],
+  initialInvitations: ProjectInvitation[] = []
+) {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [projectInvitations, setProjectInvitations] =
+    useState<ProjectInvitation[]>(initialInvitations);
   const [openDialog, setOpenDialog] = useState<DialogType>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [formName, setFormName] = useState("");
   const [slugSuffix, setSlugSuffix] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [invitationActionId, setInvitationActionId] = useState<string | null>(
+    null
+  );
+  const [invitationActionError, setInvitationActionError] = useState<
+    string | null
+  >(null);
 
   const ownedProjects = useMemo(
     () => projects.filter((p) => p.isOwner),
@@ -87,6 +124,11 @@ export function useProjectDialogs(initialProjects: Project[] = []) {
   const refreshProjects = useCallback(async () => {
     const data = await fetchProjects();
     setProjects(data);
+  }, []);
+
+  const refreshProjectInvitations = useCallback(async () => {
+    const data = await fetchProjectInvitations();
+    setProjectInvitations(data);
   }, []);
 
   const handleCreate = useCallback(async () => {
@@ -152,9 +194,81 @@ export function useProjectDialogs(initialProjects: Project[] = []) {
     }
   }, [selectedProject, refreshProjects, closeDialog]);
 
+  const handleAcceptInvitation = useCallback(
+    async (invitation: ProjectInvitation) => {
+      setInvitationActionId(invitation.id);
+      setInvitationActionError(null);
+
+      try {
+        const res = await fetch(`/api/project-invitations/${invitation.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "accept" }),
+        });
+
+        if (!res.ok) {
+          throw new Error(
+            await getResponseMessage(res, "Failed to accept invitation")
+          );
+        }
+
+        setProjectInvitations((prev) =>
+          prev.filter((item) => item.id !== invitation.id)
+        );
+        await refreshProjects();
+      } catch (err) {
+        setInvitationActionError(
+          err instanceof Error
+            ? err.message
+            : "Failed to accept invitation. Please try again."
+        );
+      } finally {
+        setInvitationActionId(null);
+      }
+    },
+    [refreshProjects]
+  );
+
+  const handleDenyInvitation = useCallback(
+    async (invitation: ProjectInvitation) => {
+      setInvitationActionId(invitation.id);
+      setInvitationActionError(null);
+
+      try {
+        const res = await fetch(`/api/project-invitations/${invitation.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "deny" }),
+        });
+
+        if (!res.ok) {
+          throw new Error(
+            await getResponseMessage(res, "Failed to deny invitation")
+          );
+        }
+
+        setProjectInvitations((prev) =>
+          prev.filter((item) => item.id !== invitation.id)
+        );
+      } catch (err) {
+        setInvitationActionError(
+          err instanceof Error
+            ? err.message
+            : "Failed to update invitation. Please try again."
+        );
+      } finally {
+        setInvitationActionId(null);
+      }
+    },
+    []
+  );
+
   return useMemo(
     () => ({
       projects,
+      projectInvitations,
+      invitationActionId,
+      invitationActionError,
       ownedProjects,
       sharedProjects,
       openDialog,
@@ -171,9 +285,15 @@ export function useProjectDialogs(initialProjects: Project[] = []) {
       handleCreate,
       handleRename,
       handleDelete,
+      handleAcceptInvitation,
+      handleDenyInvitation,
+      refreshProjectInvitations,
     }),
     [
       projects,
+      projectInvitations,
+      invitationActionId,
+      invitationActionError,
       ownedProjects,
       sharedProjects,
       openDialog,
@@ -189,6 +309,9 @@ export function useProjectDialogs(initialProjects: Project[] = []) {
       handleCreate,
       handleRename,
       handleDelete,
+      handleAcceptInvitation,
+      handleDenyInvitation,
+      refreshProjectInvitations,
     ]
   );
 }

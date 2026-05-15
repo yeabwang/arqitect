@@ -3,6 +3,12 @@ enum ProjectStatus {
   ARCHIVED
 }
 
+enum ProjectInvitationStatus {
+  PENDING
+  ACCEPTED
+  DENIED
+}
+
 model Project {
   id             String                @id @default(cuid())
   ownerId        String
@@ -14,6 +20,7 @@ model Project {
   updatedAt      DateTime              @updatedAt
 
   collaborators  ProjectCollaborator[]
+  invitations    ProjectInvitation[]
 
   @@index([ownerId])
   @@index([createdAt])
@@ -30,4 +37,21 @@ model ProjectCollaborator {
   @@unique([projectId, email])
   @@index([email])
   @@index([projectId, createdAt])
+}
+
+model ProjectInvitation {
+  id          String                  @id @default(cuid())
+  projectId   String
+  email       String                  @db.Citext
+  invitedById String
+  status      ProjectInvitationStatus @default(PENDING)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, email])
+  @@index([email, status])
+  @@index([projectId, status, createdAt])
+  @@index([invitedById, status])
 }

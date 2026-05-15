@@ -33,6 +33,11 @@
 
 - Every project has a single owner (Clerk user ID).
 - Projects can include additional collaborators.
+- Project sharing starts as a pending invitation by email.
+- Pending invitations do not grant project access.
+- Only the invited user's matching primary email can accept or deny an invitation.
+- Accepting an invitation creates the collaborator relationship that grants access.
+- Denied invitations remain visible to the inviter as denied state and are hidden from the invitee's Shared tab.
 - Only authenticated users can access protected routes.
 - Only the owner or a collaborator can mutate project resources.
 - Liveblocks room tokens are issued only after verifying project membership.

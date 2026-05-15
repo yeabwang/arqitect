@@ -7,15 +7,23 @@ import { EditorHome } from "@/components/editor/editor-home";
 import { CreateProjectDialog } from "@/components/editor/create-project-dialog";
 import { RenameProjectDialog } from "@/components/editor/rename-project-dialog";
 import { DeleteProjectDialog } from "@/components/editor/delete-project-dialog";
-import { useProjectDialogs, type Project } from "@/hooks/use-project-dialogs";
+import {
+  useProjectDialogs,
+  type Project,
+  type ProjectInvitation,
+} from "@/hooks/use-project-dialogs";
 
 interface EditorPageClientProps {
   initialProjects: Project[];
+  initialInvitations: ProjectInvitation[];
 }
 
-export function EditorPageClient({ initialProjects }: EditorPageClientProps) {
+export function EditorPageClient({
+  initialProjects,
+  initialInvitations,
+}: EditorPageClientProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const dialogs = useProjectDialogs(initialProjects);
+  const dialogs = useProjectDialogs(initialProjects, initialInvitations);
 
   return (
     <div className="min-h-screen bg-background">
@@ -28,9 +36,14 @@ export function EditorPageClient({ initialProjects }: EditorPageClientProps) {
         onClose={() => setIsSidebarOpen(false)}
         ownedProjects={dialogs.ownedProjects}
         sharedProjects={dialogs.sharedProjects}
+        projectInvitations={dialogs.projectInvitations}
+        invitationActionId={dialogs.invitationActionId}
+        invitationActionError={dialogs.invitationActionError}
         onCreateProject={dialogs.openCreateDialog}
         onRenameProject={dialogs.openRenameDialog}
         onDeleteProject={dialogs.openDeleteDialog}
+        onAcceptInvitation={dialogs.handleAcceptInvitation}
+        onDenyInvitation={dialogs.handleDenyInvitation}
       />
       <main className="pt-12">
         <div className="flex h-[calc(100vh-3rem)] items-center justify-center">
