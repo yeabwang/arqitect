@@ -12,12 +12,13 @@ export async function GET() {
   }
 
   const prisma = await getPrisma();
+  const normalizedEmail = identity.primaryEmail?.trim().toLowerCase();
   const projects = await prisma.project.findMany({
     where: {
       OR: [
         { ownerId: identity.userId },
-        ...(identity.primaryEmail
-          ? [{ collaborators: { some: { email: identity.primaryEmail } } }]
+        ...(normalizedEmail
+          ? [{ collaborators: { some: { email: normalizedEmail } } }]
           : []),
       ],
     },

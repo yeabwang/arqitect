@@ -1,8 +1,7 @@
 import getPrisma from "@/lib/prisma";
 import { getCurrentProjectIdentity } from "@/lib/project-access";
-import { enrichInvitations, normalizeCollaboratorEmail } from "@/lib/project-collaborators";
+import { fetchUserInvitations } from "@/lib/project-invitations";
 import { EditorPageClient } from "@/components/editor/editor-page-client";
-import type { ProjectInvitation } from "@/hooks/use-project-dialogs";
 
 export default async function EditorPage() {
   const identity = await getCurrentProjectIdentity();
@@ -24,42 +23,7 @@ export default async function EditorPage() {
     orderBy: { createdAt: "desc" },
     select: { id: true, name: true, ownerId: true },
   });
-  const invitations = identity.primaryEmail
-    ? await prisma.projectInvitation.findMany({
-        where: {
-          email: normalizeCollaboratorEmail(identity.primaryEmail),
-          status: "PENDING",
-        },
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          email: true,
-          invitedById: true,
-          status: true,
-          createdAt: true,
-          project: { select: { id: true, name: true } },
-        },
-      })
-    : [];
-  const invitationProfiles = await enrichInvitations(
-    invitations.map((invitation) => ({
-      id: invitation.id,
-      email: invitation.email,
-      invitedById: invitation.invitedById,
-      status: invitation.status,
-      createdAt: invitation.createdAt,
-    }))
-  );
-  const initialInvitations: ProjectInvitation[] = invitationProfiles.map((profile) => {
-    const invitation = invitations.find((item) => item.id === profile.id);
-
-    return {
-      ...profile,
-      status: "PENDING",
-      projectId: invitation?.project.id ?? "",
-      projectName: invitation?.project.name ?? "Untitled Project",
-    };
-  });
+  const initialInvitations = await fetchUserInvitations(identity.primaryEmail);
 
   return (
     <EditorPageClient

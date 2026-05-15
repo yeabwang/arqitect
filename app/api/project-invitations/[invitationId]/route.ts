@@ -1,8 +1,5 @@
 import getPrisma from "@/lib/prisma";
-import {
-  canActOnInvitation,
-  isInvitationForEmail,
-} from "@/lib/project-collaborators";
+import { isInvitationForEmail } from "@/lib/project-collaborators";
 import { getCurrentProjectIdentity } from "@/lib/project-access";
 
 interface InvitationRouteContext {
@@ -54,35 +51,32 @@ export async function PATCH(request: Request, ctx: InvitationRouteContext) {
     return new Response("Forbidden", { status: 403 });
   }
 
-  if (action === "accept" && invitation.status === "ACCEPTED") {
-    return Response.json({
-      status: "ACCEPTED",
-      projectId: invitation.projectId,
-    });
-  }
-
-  if (action === "deny" && invitation.status === "DENIED") {
-    return Response.json({ status: "DENIED" });
-  }
-
-  if (!canActOnInvitation(invitation, identity.primaryEmail)) {
-    return new Response("Invitation is no longer pending", { status: 409 });
-  }
-
   if (action === "deny") {
-    await prisma.projectInvitation.update({
-      where: { id: invitationId },
-      data: { status: "DENIED" },
+    const transitionApplied = await prisma.$transaction(async (tx) => {
+      const result = await tx.projectInvitation.updateMany({
+        where: { id: invitationId, status: "PENDING" },
+        data: { status: "DENIED" },
+      });
+
+      return result.count > 0;
     });
+
+    if (!transitionApplied) {
+      return new Response("Invitation is no longer pending", { status: 409 });
+    }
 
     return Response.json({ status: "DENIED" });
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.projectInvitation.update({
-      where: { id: invitationId },
+  const transitionApplied = await prisma.$transaction(async (tx) => {
+    const result = await tx.projectInvitation.updateMany({
+      where: { id: invitationId, status: "PENDING" },
       data: { status: "ACCEPTED" },
     });
+
+    if (result.count === 0) {
+      return false;
+    }
 
     await tx.projectCollaborator.upsert({
       where: {
@@ -97,7 +91,13 @@ export async function PATCH(request: Request, ctx: InvitationRouteContext) {
       },
       update: {},
     });
+
+    return true;
   });
+
+  if (!transitionApplied) {
+    return new Response("Invitation is no longer pending", { status: 409 });
+  }
 
   return Response.json({ status: "ACCEPTED", projectId: invitation.projectId });
 }
