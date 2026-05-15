@@ -2,23 +2,14 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import type { ProjectInvitation } from "@/lib/project-invitations";
+
+export type { ProjectInvitation } from "@/lib/project-invitations";
 
 export interface Project {
   id: string;
   name: string;
   isOwner: boolean;
-}
-
-export interface ProjectInvitation {
-  id: string;
-  email: string;
-  projectId: string;
-  projectName: string;
-  invitedById: string;
-  inviterName: string | null;
-  inviterAvatarUrl: string | null;
-  status: "PENDING";
-  createdAt: string;
 }
 
 export type DialogType = "create" | "rename" | "delete" | null;
