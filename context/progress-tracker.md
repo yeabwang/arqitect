@@ -4,11 +4,11 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Phase
 
-- None (ready for next feature unit)
+- Ready for 06-ai-service
 
 ## Current Goal
 
-- Code review fixes complete: Share button visibility now depends on `onShareProject`, Prisma Accelerate client construction uses `accelerateUrl` with `withAccelerate()`, and deprecated Prisma `postgresqlExtensions` preview configuration was removed.
+- 11-base-canvas is complete; next up is AI service integration.
 
 ## Completed
 
@@ -25,6 +25,8 @@ Update this file whenever the current phase, active feature, or implementation s
 - Runtime Prisma delegate guard: `lib/prisma.ts` now validates cached Prisma clients for the project, collaborator, and invitation delegates before reuse, disconnects stale dev clients after schema regeneration, and raises a clear generate/restart error if the generated client itself is missing required delegates. `lib/prisma.test.ts` covers stale-client rejection and compatible-client acceptance. Focused tests, ESLint, TypeScript, and Next.js build pass clean.
 - Invitation accept runtime fix: `app/api/project-invitations/[invitationId]` now separates invited-email authorization from pending-state validation so stale accept/deny clicks for already-finalized matching invitations return success instead of 403. `hooks/use-project-dialogs.ts` catches invitation action failures and exposes inline state to `ProjectSidebar`, which disables active action buttons and displays API errors without a runtime overlay. Focused tests, ESLint, TypeScript, and Next.js build pass clean.
 - Code review fixes: `components/editor/editor-navbar.tsx` now renders Share independently from the AI sidebar toggle. `lib/prisma.ts` now uses `new PrismaClient({ accelerateUrl }).$extends(withAccelerate())` for `prisma+postgres://` URLs and includes `@prisma/extension-accelerate`. `prisma/schema.prisma` no longer uses deprecated `postgresqlExtensions`; the `citext` extension is handled in the invitation migration. Prisma validate/generate, focused tests, touched-file ESLint, TypeScript, and Next.js build pass; full ESLint is blocked by pre-existing empty-object types in untracked `liveblocks.config.ts`.
+- 10-liveblocks-setup: `liveblocks.config.ts` defines cursor/isThinking presence and user metadata for display name, avatar URL, and cursor color. `lib/liveblocks.ts` provides a cached Liveblocks node client and deterministic user ID to cursor color mapping. `app/api/liveblocks-auth/route.ts` authenticates Clerk users, validates project access through existing helpers, privately creates the project room if needed, and returns a room-scoped Liveblocks session token with user metadata. `@liveblocks/node` installed. `lib/prisma.ts` restored because existing project access helpers depend on it. `lib/project-invitations.ts` pending-status narrowing fixed so TypeScript passes. ESLint, TypeScript, and Next.js build pass clean.
+- 11-base-canvas: `types/canvas.ts` defines shared canvas node/edge types, custom type names, the eight documented node color pairs, and the six documented node shapes. `components/editor/canvas-workspace.tsx` adds the client-side Liveblocks provider, room provider, Suspense loading state, connection error fallback, and Liveblocks-synced React Flow canvas using `useLiveblocksFlow` with empty initial nodes/edges. `components/editor/editor-workspace-client.tsx` replaces the placeholder with the canvas while keeping `app/editor/[roomId]/page.tsx` server-side. React Flow, Liveblocks UI, and Liveblocks React Flow styles are imported globally. Liveblocks user metadata now includes `color` for default cursor rendering. ESLint, TypeScript, and Next.js build pass clean.
 
 ## In Progress
 

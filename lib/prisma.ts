@@ -42,7 +42,7 @@ async function createPrismaClient(): Promise<PrismaClient> {
     throw new Error("DATABASE_URL environment variable is required");
   }
 
-  if (url.startsWith("prisma+postgres://")) {
+  if (url.startsWith("prisma+postgres://") || url.startsWith("prisma://")) {
     return new PrismaClient({ accelerateUrl: url }).$extends(
       withAccelerate()
     ) as unknown as PrismaClient;

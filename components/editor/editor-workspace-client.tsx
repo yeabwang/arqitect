@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Bot, Sparkles } from "lucide-react";
+import { Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CanvasWorkspace } from "@/components/editor/canvas-workspace";
 import { EditorNavbar } from "@/components/editor/editor-navbar";
 import { ProjectSidebar } from "@/components/editor/project-sidebar";
 import { CreateProjectDialog } from "@/components/editor/create-project-dialog";
@@ -66,21 +67,8 @@ export function EditorWorkspaceClient({
 
       <main className="pt-12">
         <div className="flex h-[calc(100vh-3rem)] overflow-hidden">
-          <section className="relative flex min-w-0 flex-1 items-center justify-center bg-background">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border-default)_1px,transparent_1px),linear-gradient(to_bottom,var(--border-default)_1px,transparent_1px)] bg-[size:32px_32px] opacity-20" />
-            <div className="relative flex flex-col items-center gap-3 text-center">
-              <div className="flex size-12 items-center justify-center rounded-2xl border border-border bg-card text-primary">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <div className="space-y-1">
-                <h2 className="text-sm font-medium text-foreground">
-                  Canvas workspace placeholder
-                </h2>
-                <p className="max-w-sm text-sm text-muted-foreground">
-                  The collaborative system design canvas will render here.
-                </p>
-              </div>
-            </div>
+          <section className="relative min-w-0 flex-1 bg-background">
+            <CanvasWorkspace roomId={currentProject.id} />
           </section>
 
           <aside
