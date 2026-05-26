@@ -3,8 +3,11 @@
 import {
   Component,
   useCallback,
+  useEffect,
   useRef,
+  useState,
   type DragEvent,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
 import {
@@ -15,8 +18,9 @@ import {
   useCanUndo,
   useRedo,
   useUndo,
+  useUpdateMyPresence,
 } from "@liveblocks/react/suspense";
-import { Cursors, useLiveblocksFlow } from "@liveblocks/react-flow";
+import { useLiveblocksFlow } from "@liveblocks/react-flow";
 import {
   addEdge,
   Background,
@@ -36,8 +40,22 @@ import {
 import { CanvasControls } from "@/components/editor/canvas-controls";
 import { CanvasEdge as CanvasEdgeRenderer } from "@/components/editor/canvas-edge";
 import { CanvasNode as CanvasNodeRenderer } from "@/components/editor/canvas-node";
+import { PresenceAvatars } from "@/components/editor/presence-avatars";
+import { PresenceCursors } from "@/components/editor/presence-cursors";
 import { ShapePanel } from "@/components/editor/shape-panel";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { StarterTemplatesModal } from "@/components/editor/starter-templates-modal";
+import {
+  instantiateTemplate,
+  type CanvasTemplate,
+} from "@/components/editor/starter-templates";
+import {
+  useCanvasAutosave,
+  type CanvasSaveStatus,
+} from "@/hooks/useCanvasAutosave";
+import {
+  useKeyboardShortcuts,
+  ZOOM_ANIMATION_DURATION,
+} from "@/hooks/useKeyboardShortcuts";
 import {
   CANVAS_EDGE_TYPE,
   CANVAS_NODE_TYPE,
@@ -82,6 +100,17 @@ const PASTE_OFFSET = 32;
 
 interface CanvasWorkspaceProps {
   roomId: string;
+  projectId: string;
+  templatesOpen: boolean;
+  onTemplatesOpenChange: (open: boolean) => void;
+  onSaveStatusChange?: (status: CanvasSaveStatus) => void;
+}
+
+interface CollaborativeCanvasProps {
+  projectId: string;
+  templatesOpen: boolean;
+  onTemplatesOpenChange: (open: boolean) => void;
+  onSaveStatusChange?: (status: CanvasSaveStatus) => void;
 }
 
 interface CanvasErrorBoundaryState {
@@ -126,7 +155,12 @@ function CanvasConnectionError() {
   );
 }
 
-function CollaborativeCanvas() {
+function CollaborativeCanvas({
+  projectId,
+  templatesOpen,
+  onTemplatesOpenChange,
+  onSaveStatusChange,
+}: CollaborativeCanvasProps) {
   const { nodes, edges, onNodesChange, onEdgesChange, onDelete } =
     useLiveblocksFlow<CanvasNode, CanvasEdge>({
       suspense: true,
@@ -135,6 +169,82 @@ function CollaborativeCanvas() {
     });
   const reactFlow = useReactFlow<CanvasNode, CanvasEdge>();
   const { screenToFlowPosition } = reactFlow;
+  const updateMyPresence = useUpdateMyPresence();
+
+  // One-time load of the saved canvas blob into the Liveblocks room. Skipped if
+  // the room already has nodes/edges so live collaboration is never clobbered.
+  const hasAttemptedLoadRef = useRef(false);
+  const [isCanvasLoaded, setIsCanvasLoaded] = useState(false);
+  useEffect(() => {
+    if (hasAttemptedLoadRef.current) {
+      return;
+    }
+    hasAttemptedLoadRef.current = true;
+
+    const currentNodes = reactFlow.getNodes();
+    const currentEdges = reactFlow.getEdges();
+    if (currentNodes.length > 0 || currentEdges.length > 0) {
+      setIsCanvasLoaded(true);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch(`/api/projects/${projectId}/canvas`);
+        if (!response.ok) {
+          return;
+        }
+        const data = (await response.json()) as {
+          nodes?: CanvasNode[];
+          edges?: CanvasEdge[];
+        };
+        if (cancelled) {
+          return;
+        }
+        // Re-check the room is still empty in case a collaborator added
+        // content while the load was in flight.
+        const liveNodes = reactFlow.getNodes();
+        const liveEdges = reactFlow.getEdges();
+        if (liveNodes.length > 0 || liveEdges.length > 0) {
+          return;
+        }
+        const savedNodes = Array.isArray(data.nodes) ? data.nodes : [];
+        const savedEdges = Array.isArray(data.edges) ? data.edges : [];
+        if (savedNodes.length > 0) {
+          onNodesChange(
+            savedNodes.map((item) => ({ type: "add" as const, item })),
+          );
+        }
+        if (savedEdges.length > 0) {
+          onEdgesChange(
+            savedEdges.map((item) => ({ type: "add" as const, item })),
+          );
+        }
+      } catch {
+        // Silent failure — autosave will still kick in once the user edits.
+      } finally {
+        if (!cancelled) {
+          setIsCanvasLoaded(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, reactFlow, onNodesChange, onEdgesChange]);
+
+  const saveStatus = useCanvasAutosave({
+    projectId,
+    nodes,
+    edges,
+    enabled: isCanvasLoaded,
+  });
+
+  useEffect(() => {
+    onSaveStatusChange?.(saveStatus);
+  }, [saveStatus, onSaveStatusChange]);
 
   // Liveblocks history powers undo/redo for the synced flow state.
   const undo = useUndo();
@@ -246,6 +356,74 @@ function CollaborativeCanvas() {
     }
   }, [onEdgesChange, onNodesChange, reactFlow]);
 
+  // Append a starter template to the canvas alongside the user's existing work.
+  // Template positions are shifted so the imported diagram lands adjacent to
+  // the rightmost existing node instead of stacking on top of current content.
+  // The freshly added nodes become the selection, and the view fits to show
+  // both the existing diagram and the new import.
+  const handleImportTemplate = useCallback(
+    (template: CanvasTemplate) => {
+      const { nodes: templateNodes, edges: templateEdges } =
+        instantiateTemplate(template);
+      if (templateNodes.length === 0) {
+        return;
+      }
+
+      const existingNodes = reactFlow.getNodes();
+
+      // Place the template to the right of whatever is already on the canvas
+      // (with a small gap) so existing diagrams stay intact and visible.
+      const GAP_BETWEEN_DIAGRAMS = 160;
+      if (existingNodes.length > 0) {
+        const existingMaxX = Math.max(
+          ...existingNodes.map((node) => {
+            const width =
+              Number(node.style?.width) || node.measured?.width || 0;
+            return node.position.x + width;
+          }),
+        );
+        const templateMinX = Math.min(
+          ...templateNodes.map((node) => node.position.x),
+        );
+        const shiftX = existingMaxX + GAP_BETWEEN_DIAGRAMS - templateMinX;
+        templateNodes.forEach((node) => {
+          node.position = { x: node.position.x + shiftX, y: node.position.y };
+        });
+      }
+
+      // Deselect anything currently selected so the import is the active
+      // selection — makes it obvious which nodes just arrived.
+      const deselectChanges = existingNodes
+        .filter((node) => node.selected)
+        .map((node) => ({
+          type: "select" as const,
+          id: node.id,
+          selected: false,
+        }));
+      const addNodeChanges = templateNodes.map((item) => ({
+        type: "add" as const,
+        item: { ...item, selected: true },
+      }));
+
+      onNodesChange([...deselectChanges, ...addNodeChanges]);
+      if (templateEdges.length > 0) {
+        onEdgesChange(
+          templateEdges.map((item) => ({ type: "add" as const, item })),
+        );
+      }
+
+      // Fit once the new elements have settled into the flow so the user sees
+      // both their original work and the imported template.
+      requestAnimationFrame(() => {
+        void reactFlow.fitView({
+          duration: ZOOM_ANIMATION_DURATION,
+          padding: 0.2,
+        });
+      });
+    },
+    [onEdgesChange, onNodesChange, reactFlow],
+  );
+
   useKeyboardShortcuts({
     reactFlow,
     onUndo: undo,
@@ -275,6 +453,21 @@ function CollaborativeCanvas() {
     },
     [onEdgesChange],
   );
+
+  const handleMouseMove = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+      updateMyPresence({ cursor: { x: position.x, y: position.y } });
+    },
+    [screenToFlowPosition, updateMyPresence],
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    updateMyPresence({ cursor: null });
+  }, [updateMyPresence]);
 
   const handleDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
     if (!event.dataTransfer.types.includes(SHAPE_DRAG_MIME)) {
@@ -330,6 +523,8 @@ function CollaborativeCanvas() {
       className="relative h-full w-full bg-background"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
     >
       <ReactFlow<CanvasNode, CanvasEdge>
         nodes={nodes}
@@ -368,8 +563,9 @@ function CollaborativeCanvas() {
           nodeStrokeColor="var(--text-primary)"
           className="!bottom-6 !right-6 !m-0 z-[1000] overflow-hidden rounded-xl border border-border-default shadow-lg"
         />
-        <Cursors />
       </ReactFlow>
+      <PresenceCursors />
+      <PresenceAvatars />
       <CanvasControls
         onUndo={undo}
         onRedo={redo}
@@ -377,22 +573,38 @@ function CollaborativeCanvas() {
         canRedo={canRedo}
       />
       <ShapePanel />
+      <StarterTemplatesModal
+        open={templatesOpen}
+        onClose={() => onTemplatesOpenChange(false)}
+        onImport={handleImportTemplate}
+      />
     </div>
   );
 }
 
-export function CanvasWorkspace({ roomId }: CanvasWorkspaceProps) {
+export function CanvasWorkspace({
+  roomId,
+  projectId,
+  templatesOpen,
+  onTemplatesOpenChange,
+  onSaveStatusChange,
+}: CanvasWorkspaceProps) {
   return (
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
       <CanvasErrorBoundary>
         <RoomProvider
           id={roomId}
-          initialPresence={{ cursor: null, isThinking: false }}
+          initialPresence={{ cursor: null, thinking: false }}
         >
           <ClientSideSuspense fallback={<CanvasLoading />}>
             {() => (
               <ReactFlowProvider>
-                <CollaborativeCanvas />
+                <CollaborativeCanvas
+                  projectId={projectId}
+                  templatesOpen={templatesOpen}
+                  onTemplatesOpenChange={onTemplatesOpenChange}
+                  onSaveStatusChange={onSaveStatusChange}
+                />
               </ReactFlowProvider>
             )}
           </ClientSideSuspense>
