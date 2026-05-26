@@ -62,5 +62,13 @@ export interface ShapeDragPayload {
 }
 
 export type CanvasNode = Node<CanvasNodeData, typeof CANVAS_NODE_TYPE>;
-export type CanvasEdgeData = Record<string, unknown>;
+
+// Light edge stroke per ui-context's documented default edge color. Used by both
+// the custom edge renderer and the default arrow marker so they stay in sync.
+export const EDGE_STROKE_COLOR = "#f8fafc";
+
+export interface CanvasEdgeData extends Record<string, unknown> {
+  label?: string;
+}
+
 export type CanvasEdge = Edge<CanvasEdgeData, typeof CANVAS_EDGE_TYPE>;

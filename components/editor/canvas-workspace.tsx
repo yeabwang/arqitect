@@ -8,20 +8,29 @@ import {
 } from "@liveblocks/react/suspense";
 import { Cursors, useLiveblocksFlow } from "@liveblocks/react-flow";
 import {
+  addEdge,
   Background,
   BackgroundVariant,
+  ConnectionLineType,
   ConnectionMode,
+  MarkerType,
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
+  type Connection,
+  type DefaultEdgeOptions,
+  type EdgeTypes,
   type NodeTypes,
 } from "@xyflow/react";
+import { CanvasEdge as CanvasEdgeRenderer } from "@/components/editor/canvas-edge";
 import { CanvasNode as CanvasNodeRenderer } from "@/components/editor/canvas-node";
 import { ShapePanel } from "@/components/editor/shape-panel";
 import {
+  CANVAS_EDGE_TYPE,
   CANVAS_NODE_TYPE,
   DEFAULT_NODE_COLOR,
+  EDGE_STROKE_COLOR,
   SHAPE_DRAG_MIME,
   type CanvasEdge,
   type CanvasNode,
@@ -30,6 +39,25 @@ import {
 
 const nodeTypes: NodeTypes = {
   [CANVAS_NODE_TYPE]: CanvasNodeRenderer,
+};
+
+const edgeTypes: EdgeTypes = {
+  [CANVAS_EDGE_TYPE]: CanvasEdgeRenderer,
+};
+
+// Default style for new edges: custom renderer, light rounded stroke, and an
+// arrowhead at the end.
+const ARROW_MARKER = {
+  type: MarkerType.ArrowClosed,
+  width: 18,
+  height: 18,
+  color: EDGE_STROKE_COLOR,
+} as const;
+
+const defaultEdgeOptions: DefaultEdgeOptions = {
+  type: CANVAS_EDGE_TYPE,
+  markerEnd: ARROW_MARKER,
+  style: { stroke: EDGE_STROKE_COLOR, strokeWidth: 2, strokeLinecap: "round" },
 };
 
 // Monotonic counter combined with the shape name and a timestamp to build
@@ -83,19 +111,33 @@ function CanvasConnectionError() {
 }
 
 function CollaborativeCanvas() {
-  const {
-    nodes,
-    edges,
-    onNodesChange,
-    onEdgesChange,
-    onConnect,
-    onDelete,
-  } = useLiveblocksFlow<CanvasNode, CanvasEdge>({
-    suspense: true,
-    nodes: { initial: initialNodes },
-    edges: { initial: initialEdges },
-  });
+  const { nodes, edges, onNodesChange, onEdgesChange, onDelete } =
+    useLiveblocksFlow<CanvasNode, CanvasEdge>({
+      suspense: true,
+      nodes: { initial: initialNodes },
+      edges: { initial: initialEdges },
+    });
   const { screenToFlowPosition } = useReactFlow<CanvasNode, CanvasEdge>();
+
+  // Liveblocks' onConnect creates a plain edge (no type/marker), so build the
+  // connection here with the custom edge type + arrow and add it through the
+  // synced onEdgesChange flow.
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      const [base] = addEdge<CanvasEdge>(connection, []);
+      if (!base) {
+        return;
+      }
+      const newEdge: CanvasEdge = {
+        ...base,
+        type: CANVAS_EDGE_TYPE,
+        markerEnd: ARROW_MARKER,
+        data: {},
+      };
+      onEdgesChange([{ type: "add", item: newEdge }]);
+    },
+    [onEdgesChange],
+  );
 
   const handleDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
     if (!event.dataTransfer.types.includes(SHAPE_DRAG_MIME)) {
@@ -156,11 +198,15 @@ function CollaborativeCanvas() {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        defaultEdgeOptions={defaultEdgeOptions}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
+        onConnect={handleConnect}
         onDelete={onDelete}
         connectionMode={ConnectionMode.Loose}
+        connectionLineType={ConnectionLineType.SmoothStep}
+        connectionLineStyle={{ stroke: EDGE_STROKE_COLOR, strokeWidth: 2 }}
         fitView
         colorMode="dark"
         className="bg-background"

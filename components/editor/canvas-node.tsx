@@ -68,7 +68,7 @@ export function CanvasNode({ id, data, selected }: NodeProps<CanvasNodeType>) {
   }
 
   return (
-    <div className="relative h-full w-full">
+    <div className="group relative h-full w-full">
       <NodeToolbar
         isVisible={selected}
         position={Position.Top}
@@ -153,7 +153,16 @@ export function CanvasNode({ id, data, selected }: NodeProps<CanvasNodeType>) {
       </div>
 
       {HANDLE_SIDES.map(({ id: handleId, position }) => (
-        <Handle key={handleId} id={handleId} type="source" position={position} />
+        <Handle
+          key={handleId}
+          id={handleId}
+          type="source"
+          position={position}
+          // Subtle white dots with a dark border, hidden until the node is
+          // hovered. Loose connection mode lets any handle connect to any other.
+          className="!h-2 !w-2 !rounded-full !border opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+          style={{ backgroundColor: "#ffffff", borderColor: "var(--bg-base)" }}
+        />
       ))}
     </div>
   );
