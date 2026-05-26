@@ -6,6 +6,7 @@ import {
   PanelLeftClose,
   PanelRightOpen,
   PanelRightClose,
+  LayoutTemplate,
   Share2,
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
@@ -14,6 +15,7 @@ interface EditorNavbarProps {
   isSidebarOpen: boolean;
   onToggleSidebar: () => void;
   projectName?: string;
+  onOpenStarterTemplates?: () => void;
   onShareProject?: () => void;
   isAiSidebarOpen?: boolean;
   onToggleAiSidebar?: () => void;
@@ -23,6 +25,7 @@ export function EditorNavbar({
   isSidebarOpen,
   onToggleSidebar,
   projectName,
+  onOpenStarterTemplates,
   onShareProject,
   isAiSidebarOpen = false,
   onToggleAiSidebar,
@@ -53,6 +56,16 @@ export function EditorNavbar({
       </div>
 
       <div className="flex items-center gap-2 px-2">
+        {onOpenStarterTemplates ? (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onOpenStarterTemplates}
+            aria-label="Start from a template"
+          >
+            <LayoutTemplate className="h-4 w-4" />
+          </Button>
+        ) : null}
         {onShareProject ? (
           <Button
             variant="ghost"

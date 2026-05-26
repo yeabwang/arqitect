@@ -30,6 +30,7 @@ export function EditorWorkspaceClient({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(true);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
   const dialogs = useProjectDialogs(initialProjects, initialInvitations);
 
   const projectName = useMemo(
@@ -45,6 +46,7 @@ export function EditorWorkspaceClient({
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen((open) => !open)}
         projectName={projectName}
+        onOpenStarterTemplates={() => setIsTemplatesOpen(true)}
         onShareProject={() => setIsShareDialogOpen(true)}
         isAiSidebarOpen={isAiSidebarOpen}
         onToggleAiSidebar={() => setIsAiSidebarOpen((open) => !open)}
@@ -70,7 +72,11 @@ export function EditorWorkspaceClient({
           {/* Canvas fills the full area; sidebars float above it so the dotted
               background stays visible edge to edge underneath them. */}
           <div className="absolute inset-0">
-            <CanvasWorkspace roomId={currentProject.id} />
+            <CanvasWorkspace
+              roomId={currentProject.id}
+              templatesOpen={isTemplatesOpen}
+              onTemplatesOpenChange={setIsTemplatesOpen}
+            />
           </div>
 
           <aside

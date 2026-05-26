@@ -37,7 +37,15 @@ import { CanvasControls } from "@/components/editor/canvas-controls";
 import { CanvasEdge as CanvasEdgeRenderer } from "@/components/editor/canvas-edge";
 import { CanvasNode as CanvasNodeRenderer } from "@/components/editor/canvas-node";
 import { ShapePanel } from "@/components/editor/shape-panel";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { StarterTemplatesModal } from "@/components/editor/starter-templates-modal";
+import {
+  instantiateTemplate,
+  type CanvasTemplate,
+} from "@/components/editor/starter-templates";
+import {
+  useKeyboardShortcuts,
+  ZOOM_ANIMATION_DURATION,
+} from "@/hooks/useKeyboardShortcuts";
 import {
   CANVAS_EDGE_TYPE,
   CANVAS_NODE_TYPE,
@@ -82,6 +90,13 @@ const PASTE_OFFSET = 32;
 
 interface CanvasWorkspaceProps {
   roomId: string;
+  templatesOpen: boolean;
+  onTemplatesOpenChange: (open: boolean) => void;
+}
+
+interface CollaborativeCanvasProps {
+  templatesOpen: boolean;
+  onTemplatesOpenChange: (open: boolean) => void;
 }
 
 interface CanvasErrorBoundaryState {
@@ -126,7 +141,10 @@ function CanvasConnectionError() {
   );
 }
 
-function CollaborativeCanvas() {
+function CollaborativeCanvas({
+  templatesOpen,
+  onTemplatesOpenChange,
+}: CollaborativeCanvasProps) {
   const { nodes, edges, onNodesChange, onEdgesChange, onDelete } =
     useLiveblocksFlow<CanvasNode, CanvasEdge>({
       suspense: true,
@@ -245,6 +263,74 @@ function CollaborativeCanvas() {
       onEdgesChange(pastedEdges.map((item) => ({ type: "add" as const, item })));
     }
   }, [onEdgesChange, onNodesChange, reactFlow]);
+
+  // Append a starter template to the canvas alongside the user's existing work.
+  // Template positions are shifted so the imported diagram lands adjacent to
+  // the rightmost existing node instead of stacking on top of current content.
+  // The freshly added nodes become the selection, and the view fits to show
+  // both the existing diagram and the new import.
+  const handleImportTemplate = useCallback(
+    (template: CanvasTemplate) => {
+      const { nodes: templateNodes, edges: templateEdges } =
+        instantiateTemplate(template);
+      if (templateNodes.length === 0) {
+        return;
+      }
+
+      const existingNodes = reactFlow.getNodes();
+
+      // Place the template to the right of whatever is already on the canvas
+      // (with a small gap) so existing diagrams stay intact and visible.
+      const GAP_BETWEEN_DIAGRAMS = 160;
+      if (existingNodes.length > 0) {
+        const existingMaxX = Math.max(
+          ...existingNodes.map((node) => {
+            const width =
+              Number(node.style?.width) || node.measured?.width || 0;
+            return node.position.x + width;
+          }),
+        );
+        const templateMinX = Math.min(
+          ...templateNodes.map((node) => node.position.x),
+        );
+        const shiftX = existingMaxX + GAP_BETWEEN_DIAGRAMS - templateMinX;
+        templateNodes.forEach((node) => {
+          node.position = { x: node.position.x + shiftX, y: node.position.y };
+        });
+      }
+
+      // Deselect anything currently selected so the import is the active
+      // selection — makes it obvious which nodes just arrived.
+      const deselectChanges = existingNodes
+        .filter((node) => node.selected)
+        .map((node) => ({
+          type: "select" as const,
+          id: node.id,
+          selected: false,
+        }));
+      const addNodeChanges = templateNodes.map((item) => ({
+        type: "add" as const,
+        item: { ...item, selected: true },
+      }));
+
+      onNodesChange([...deselectChanges, ...addNodeChanges]);
+      if (templateEdges.length > 0) {
+        onEdgesChange(
+          templateEdges.map((item) => ({ type: "add" as const, item })),
+        );
+      }
+
+      // Fit once the new elements have settled into the flow so the user sees
+      // both their original work and the imported template.
+      requestAnimationFrame(() => {
+        void reactFlow.fitView({
+          duration: ZOOM_ANIMATION_DURATION,
+          padding: 0.2,
+        });
+      });
+    },
+    [onEdgesChange, onNodesChange, reactFlow],
+  );
 
   useKeyboardShortcuts({
     reactFlow,
@@ -377,11 +463,20 @@ function CollaborativeCanvas() {
         canRedo={canRedo}
       />
       <ShapePanel />
+      <StarterTemplatesModal
+        open={templatesOpen}
+        onClose={() => onTemplatesOpenChange(false)}
+        onImport={handleImportTemplate}
+      />
     </div>
   );
 }
 
-export function CanvasWorkspace({ roomId }: CanvasWorkspaceProps) {
+export function CanvasWorkspace({
+  roomId,
+  templatesOpen,
+  onTemplatesOpenChange,
+}: CanvasWorkspaceProps) {
   return (
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
       <CanvasErrorBoundary>
@@ -392,7 +487,10 @@ export function CanvasWorkspace({ roomId }: CanvasWorkspaceProps) {
           <ClientSideSuspense fallback={<CanvasLoading />}>
             {() => (
               <ReactFlowProvider>
-                <CollaborativeCanvas />
+                <CollaborativeCanvas
+                  templatesOpen={templatesOpen}
+                  onTemplatesOpenChange={onTemplatesOpenChange}
+                />
               </ReactFlowProvider>
             )}
           </ClientSideSuspense>
