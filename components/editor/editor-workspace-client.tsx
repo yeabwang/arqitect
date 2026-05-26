@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Bot, Sparkles } from "lucide-react";
+import { Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CanvasWorkspace } from "@/components/editor/canvas-workspace";
 import { EditorNavbar } from "@/components/editor/editor-navbar";
 import { ProjectSidebar } from "@/components/editor/project-sidebar";
 import { CreateProjectDialog } from "@/components/editor/create-project-dialog";
@@ -65,50 +66,36 @@ export function EditorWorkspaceClient({
       />
 
       <main className="pt-12">
-        <div className="flex h-[calc(100vh-3rem)] overflow-hidden">
-          <section className="relative flex min-w-0 flex-1 items-center justify-center bg-background">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border-default)_1px,transparent_1px),linear-gradient(to_bottom,var(--border-default)_1px,transparent_1px)] bg-[size:32px_32px] opacity-20" />
-            <div className="relative flex flex-col items-center gap-3 text-center">
-              <div className="flex size-12 items-center justify-center rounded-2xl border border-border bg-card text-primary">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <div className="space-y-1">
-                <h2 className="text-sm font-medium text-foreground">
-                  Canvas workspace placeholder
-                </h2>
-                <p className="max-w-sm text-sm text-muted-foreground">
-                  The collaborative system design canvas will render here.
-                </p>
-              </div>
-            </div>
-          </section>
+        <div className="relative h-[calc(100vh-3rem)] overflow-hidden bg-background">
+          {/* Canvas fills the full area; sidebars float above it so the dotted
+              background stays visible edge to edge underneath them. */}
+          <div className="absolute inset-0">
+            <CanvasWorkspace roomId={currentProject.id} />
+          </div>
 
           <aside
             className={cn(
-              "hidden w-80 shrink-0 border-l border-border bg-card transition-[width] duration-200 md:flex",
-              !isAiSidebarOpen && "w-0 border-l-0"
+              "absolute top-0 right-0 z-20 hidden h-full w-80 flex-col border-l border-border bg-card/80 shadow-2xl backdrop-blur-md transition-transform duration-200 md:flex",
+              isAiSidebarOpen ? "translate-x-0" : "translate-x-full pointer-events-none"
             )}
             aria-hidden={!isAiSidebarOpen}
+            inert={!isAiSidebarOpen}
           >
-            {isAiSidebarOpen ? (
-              <div className="flex min-w-80 flex-1 flex-col">
-                <div className="border-b border-border px-4 py-3">
-                  <h2 className="text-sm font-medium text-foreground">
-                    AI assistant
-                  </h2>
+            <div className="border-b border-border px-4 py-3">
+              <h2 className="text-sm font-medium text-foreground">
+                AI assistant
+              </h2>
+            </div>
+            <div className="flex flex-1 items-center justify-center px-6">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="flex size-10 items-center justify-center rounded-xl border border-border bg-background text-accent-ai-text">
+                  <Bot className="h-5 w-5" />
                 </div>
-                <div className="flex flex-1 items-center justify-center px-6">
-                  <div className="flex flex-col items-center gap-3 text-center">
-                    <div className="flex size-10 items-center justify-center rounded-xl border border-border bg-background text-accent-ai-text">
-                      <Bot className="h-5 w-5" />
-                    </div>
-                    <p className="max-w-48 text-sm text-muted-foreground">
-                      Future AI chat controls will appear here.
-                    </p>
-                  </div>
-                </div>
+                <p className="max-w-48 text-sm text-muted-foreground">
+                  Future AI chat controls will appear here.
+                </p>
               </div>
-            ) : null}
+            </div>
           </aside>
         </div>
       </main>

@@ -9,7 +9,10 @@
       "Bash(npx prisma generate)",
       "Bash(npx prisma migrate status)",
       "Bash(npx prisma migrate deploy)",
-      "Bash(npx prisma migrate dev *)"
+      "Bash(npx prisma migrate dev *)",
+      "Bash(node -e \"const i=require\\('lucide-react'\\); ['RectangleHorizontal','Diamond','Circle','Pill','Cylinder','Hexagon'].forEach\\(n=>console.log\\(n, n in i\\)\\)\")",
+      "Bash(npm run *)",
+      "Bash(npx eslint *)"
     ]
   }
 }

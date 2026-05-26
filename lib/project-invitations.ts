@@ -65,15 +65,17 @@ export async function fetchUserInvitations(
       project: { select: { id: true, name: true } },
     },
   });
-  const profiles = await enrichInvitations(
+
+  const pendingInvitations: PendingProjectInvitationRecord[] =
     invitations.map((invitation) => ({
       id: invitation.id,
       email: invitation.email,
       invitedById: invitation.invitedById,
-      status: invitation.status,
+      status: "PENDING",
       createdAt: invitation.createdAt,
-    }))
-  );
+      project: invitation.project,
+    }));
+  const profiles = await enrichInvitations(pendingInvitations);
 
-  return formatPendingProjectInvitations(invitations, profiles);
+  return formatPendingProjectInvitations(pendingInvitations, profiles);
 }
