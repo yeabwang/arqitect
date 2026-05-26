@@ -26,10 +26,36 @@ export const NODE_SHAPES = [
 export type CanvasNodeColor = (typeof NODE_COLORS)[number];
 export type CanvasNodeShape = (typeof NODE_SHAPES)[number];
 
+export const DEFAULT_NODE_COLOR: CanvasNodeColor = NODE_COLORS[0];
+
+export interface CanvasNodeSize {
+  width: number;
+  height: number;
+}
+
+// Default footprint per shape: rectangles wider than tall, circles square,
+// diamonds slightly larger so centered labels have room.
+export const DEFAULT_NODE_SIZES: Record<CanvasNodeShape, CanvasNodeSize> = {
+  rectangle: { width: 180, height: 80 },
+  diamond: { width: 160, height: 120 },
+  circle: { width: 120, height: 120 },
+  pill: { width: 180, height: 64 },
+  cylinder: { width: 140, height: 100 },
+  hexagon: { width: 160, height: 100 },
+};
+
 export interface CanvasNodeData extends Record<string, unknown> {
   label: string;
   color: CanvasNodeColor;
   shape: CanvasNodeShape;
+}
+
+// Drag-and-drop contract between the shape panel and the canvas drop target.
+export const SHAPE_DRAG_MIME = "application/ghost-shape" as const;
+
+export interface ShapeDragPayload {
+  shape: CanvasNodeShape;
+  size: CanvasNodeSize;
 }
 
 export type CanvasNode = Node<CanvasNodeData, typeof CANVAS_NODE_TYPE>;
