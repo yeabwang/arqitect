@@ -3,8 +3,11 @@
 import {
   Component,
   useCallback,
+  useEffect,
   useRef,
+  useState,
   type DragEvent,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
 import {
@@ -15,8 +18,9 @@ import {
   useCanUndo,
   useRedo,
   useUndo,
+  useUpdateMyPresence,
 } from "@liveblocks/react/suspense";
-import { Cursors, useLiveblocksFlow } from "@liveblocks/react-flow";
+import { useLiveblocksFlow } from "@liveblocks/react-flow";
 import {
   addEdge,
   Background,
@@ -36,12 +40,18 @@ import {
 import { CanvasControls } from "@/components/editor/canvas-controls";
 import { CanvasEdge as CanvasEdgeRenderer } from "@/components/editor/canvas-edge";
 import { CanvasNode as CanvasNodeRenderer } from "@/components/editor/canvas-node";
+import { PresenceAvatars } from "@/components/editor/presence-avatars";
+import { PresenceCursors } from "@/components/editor/presence-cursors";
 import { ShapePanel } from "@/components/editor/shape-panel";
 import { StarterTemplatesModal } from "@/components/editor/starter-templates-modal";
 import {
   instantiateTemplate,
   type CanvasTemplate,
 } from "@/components/editor/starter-templates";
+import {
+  useCanvasAutosave,
+  type CanvasSaveStatus,
+} from "@/hooks/useCanvasAutosave";
 import {
   useKeyboardShortcuts,
   ZOOM_ANIMATION_DURATION,
@@ -90,13 +100,17 @@ const PASTE_OFFSET = 32;
 
 interface CanvasWorkspaceProps {
   roomId: string;
+  projectId: string;
   templatesOpen: boolean;
   onTemplatesOpenChange: (open: boolean) => void;
+  onSaveStatusChange?: (status: CanvasSaveStatus) => void;
 }
 
 interface CollaborativeCanvasProps {
+  projectId: string;
   templatesOpen: boolean;
   onTemplatesOpenChange: (open: boolean) => void;
+  onSaveStatusChange?: (status: CanvasSaveStatus) => void;
 }
 
 interface CanvasErrorBoundaryState {
@@ -142,8 +156,10 @@ function CanvasConnectionError() {
 }
 
 function CollaborativeCanvas({
+  projectId,
   templatesOpen,
   onTemplatesOpenChange,
+  onSaveStatusChange,
 }: CollaborativeCanvasProps) {
   const { nodes, edges, onNodesChange, onEdgesChange, onDelete } =
     useLiveblocksFlow<CanvasNode, CanvasEdge>({
@@ -153,6 +169,82 @@ function CollaborativeCanvas({
     });
   const reactFlow = useReactFlow<CanvasNode, CanvasEdge>();
   const { screenToFlowPosition } = reactFlow;
+  const updateMyPresence = useUpdateMyPresence();
+
+  // One-time load of the saved canvas blob into the Liveblocks room. Skipped if
+  // the room already has nodes/edges so live collaboration is never clobbered.
+  const hasAttemptedLoadRef = useRef(false);
+  const [isCanvasLoaded, setIsCanvasLoaded] = useState(false);
+  useEffect(() => {
+    if (hasAttemptedLoadRef.current) {
+      return;
+    }
+    hasAttemptedLoadRef.current = true;
+
+    const currentNodes = reactFlow.getNodes();
+    const currentEdges = reactFlow.getEdges();
+    if (currentNodes.length > 0 || currentEdges.length > 0) {
+      setIsCanvasLoaded(true);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch(`/api/projects/${projectId}/canvas`);
+        if (!response.ok) {
+          return;
+        }
+        const data = (await response.json()) as {
+          nodes?: CanvasNode[];
+          edges?: CanvasEdge[];
+        };
+        if (cancelled) {
+          return;
+        }
+        // Re-check the room is still empty in case a collaborator added
+        // content while the load was in flight.
+        const liveNodes = reactFlow.getNodes();
+        const liveEdges = reactFlow.getEdges();
+        if (liveNodes.length > 0 || liveEdges.length > 0) {
+          return;
+        }
+        const savedNodes = Array.isArray(data.nodes) ? data.nodes : [];
+        const savedEdges = Array.isArray(data.edges) ? data.edges : [];
+        if (savedNodes.length > 0) {
+          onNodesChange(
+            savedNodes.map((item) => ({ type: "add" as const, item })),
+          );
+        }
+        if (savedEdges.length > 0) {
+          onEdgesChange(
+            savedEdges.map((item) => ({ type: "add" as const, item })),
+          );
+        }
+      } catch {
+        // Silent failure — autosave will still kick in once the user edits.
+      } finally {
+        if (!cancelled) {
+          setIsCanvasLoaded(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, reactFlow, onNodesChange, onEdgesChange]);
+
+  const saveStatus = useCanvasAutosave({
+    projectId,
+    nodes,
+    edges,
+    enabled: isCanvasLoaded,
+  });
+
+  useEffect(() => {
+    onSaveStatusChange?.(saveStatus);
+  }, [saveStatus, onSaveStatusChange]);
 
   // Liveblocks history powers undo/redo for the synced flow state.
   const undo = useUndo();
@@ -362,6 +454,21 @@ function CollaborativeCanvas({
     [onEdgesChange],
   );
 
+  const handleMouseMove = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+      updateMyPresence({ cursor: { x: position.x, y: position.y } });
+    },
+    [screenToFlowPosition, updateMyPresence],
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    updateMyPresence({ cursor: null });
+  }, [updateMyPresence]);
+
   const handleDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
     if (!event.dataTransfer.types.includes(SHAPE_DRAG_MIME)) {
       return;
@@ -416,6 +523,8 @@ function CollaborativeCanvas({
       className="relative h-full w-full bg-background"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
     >
       <ReactFlow<CanvasNode, CanvasEdge>
         nodes={nodes}
@@ -454,8 +563,9 @@ function CollaborativeCanvas({
           nodeStrokeColor="var(--text-primary)"
           className="!bottom-6 !right-6 !m-0 z-[1000] overflow-hidden rounded-xl border border-border-default shadow-lg"
         />
-        <Cursors />
       </ReactFlow>
+      <PresenceCursors />
+      <PresenceAvatars />
       <CanvasControls
         onUndo={undo}
         onRedo={redo}
@@ -474,22 +584,26 @@ function CollaborativeCanvas({
 
 export function CanvasWorkspace({
   roomId,
+  projectId,
   templatesOpen,
   onTemplatesOpenChange,
+  onSaveStatusChange,
 }: CanvasWorkspaceProps) {
   return (
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
       <CanvasErrorBoundary>
         <RoomProvider
           id={roomId}
-          initialPresence={{ cursor: null, isThinking: false }}
+          initialPresence={{ cursor: null, thinking: false }}
         >
           <ClientSideSuspense fallback={<CanvasLoading />}>
             {() => (
               <ReactFlowProvider>
                 <CollaborativeCanvas
+                  projectId={projectId}
                   templatesOpen={templatesOpen}
                   onTemplatesOpenChange={onTemplatesOpenChange}
+                  onSaveStatusChange={onSaveStatusChange}
                 />
               </ReactFlowProvider>
             )}
