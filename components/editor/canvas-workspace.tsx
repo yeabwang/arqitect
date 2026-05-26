@@ -37,6 +37,8 @@ import {
   type EdgeTypes,
   type NodeTypes,
 } from "@xyflow/react";
+import { AiPresenceLayer } from "@/components/editor/ai-presence-layer";
+import { AiSidebar } from "@/components/editor/ai-sidebar";
 import { CanvasControls } from "@/components/editor/canvas-controls";
 import { CanvasEdge as CanvasEdgeRenderer } from "@/components/editor/canvas-edge";
 import { CanvasNode as CanvasNodeRenderer } from "@/components/editor/canvas-node";
@@ -104,13 +106,18 @@ interface CanvasWorkspaceProps {
   templatesOpen: boolean;
   onTemplatesOpenChange: (open: boolean) => void;
   onSaveStatusChange?: (status: CanvasSaveStatus) => void;
+  aiSidebarOpen: boolean;
+  onCloseAiSidebar: () => void;
 }
 
 interface CollaborativeCanvasProps {
+  roomId: string;
   projectId: string;
   templatesOpen: boolean;
   onTemplatesOpenChange: (open: boolean) => void;
   onSaveStatusChange?: (status: CanvasSaveStatus) => void;
+  aiSidebarOpen: boolean;
+  onCloseAiSidebar: () => void;
 }
 
 interface CanvasErrorBoundaryState {
@@ -156,10 +163,13 @@ function CanvasConnectionError() {
 }
 
 function CollaborativeCanvas({
+  roomId,
   projectId,
   templatesOpen,
   onTemplatesOpenChange,
   onSaveStatusChange,
+  aiSidebarOpen,
+  onCloseAiSidebar,
 }: CollaborativeCanvasProps) {
   const { nodes, edges, onNodesChange, onEdgesChange, onDelete } =
     useLiveblocksFlow<CanvasNode, CanvasEdge>({
@@ -565,6 +575,7 @@ function CollaborativeCanvas({
         />
       </ReactFlow>
       <PresenceCursors />
+      <AiPresenceLayer />
       <PresenceAvatars />
       <CanvasControls
         onUndo={undo}
@@ -578,6 +589,12 @@ function CollaborativeCanvas({
         onClose={() => onTemplatesOpenChange(false)}
         onImport={handleImportTemplate}
       />
+      <AiSidebar
+        isOpen={aiSidebarOpen}
+        onClose={onCloseAiSidebar}
+        projectId={projectId}
+        roomId={roomId}
+      />
     </div>
   );
 }
@@ -588,6 +605,8 @@ export function CanvasWorkspace({
   templatesOpen,
   onTemplatesOpenChange,
   onSaveStatusChange,
+  aiSidebarOpen,
+  onCloseAiSidebar,
 }: CanvasWorkspaceProps) {
   return (
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
@@ -600,10 +619,13 @@ export function CanvasWorkspace({
             {() => (
               <ReactFlowProvider>
                 <CollaborativeCanvas
+                  roomId={roomId}
                   projectId={projectId}
                   templatesOpen={templatesOpen}
                   onTemplatesOpenChange={onTemplatesOpenChange}
                   onSaveStatusChange={onSaveStatusChange}
+                  aiSidebarOpen={aiSidebarOpen}
+                  onCloseAiSidebar={onCloseAiSidebar}
                 />
               </ReactFlowProvider>
             )}

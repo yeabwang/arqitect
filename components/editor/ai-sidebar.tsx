@@ -2,11 +2,23 @@
 
 import {
   useCallback,
+  useEffect,
+  useRef,
   useState,
   type ChangeEvent,
   type KeyboardEvent,
 } from "react";
-import { Bot, Download, FileText, Send, Sparkles, X } from "lucide-react";
+import { useEventListener } from "@liveblocks/react/suspense";
+import {
+  Bot,
+  Download,
+  FileText,
+  Loader2,
+  Send,
+  Sparkles,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,9 +28,11 @@ import { cn } from "@/lib/utils";
 interface AiSidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  projectId: string;
+  roomId: string;
 }
 
-type ChatRole = "user" | "assistant";
+type ChatRole = "user" | "assistant" | "status" | "error";
 
 interface ChatMessage {
   id: string;
@@ -32,37 +46,94 @@ const STARTER_PROMPTS = [
   "Build a CI/CD pipeline",
 ] as const;
 
-export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
+export function AiSidebar({
+  isOpen,
+  onClose,
+  projectId,
+  roomId,
+}: AiSidebarProps) {
   const [tab, setTab] = useState<"architect" | "specs">("architect");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const messageCounterRef = useRef(0);
+
+  const appendMessage = useCallback((role: ChatRole, content: string) => {
+    messageCounterRef.current += 1;
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `msg-${Date.now()}-${messageCounterRef.current}`,
+        role,
+        content,
+      },
+    ]);
+  }, []);
+
+  useEventListener(({ event }) => {
+    if (event.type !== "ai:status") {
+      return;
+    }
+    if (event.phase === "error") {
+      appendMessage("error", event.message);
+      return;
+    }
+    appendMessage(event.phase === "complete" ? "assistant" : "status", event.message);
+  });
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [messages.length]);
 
   const submitDraft = useCallback(
-    (value: string) => {
+    async (value: string) => {
       const trimmed = value.trim();
-      if (trimmed.length === 0) {
+      if (trimmed.length === 0 || isSubmitting) {
         return;
       }
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `msg-${Date.now()}-${prev.length}`,
-          role: "user",
-          content: trimmed,
-        },
-      ]);
+      appendMessage("user", trimmed);
       setDraft("");
+      setIsSubmitting(true);
+      try {
+        const response = await fetch("/api/ai/design", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: trimmed,
+            projectId,
+            roomId,
+          }),
+        });
+        if (!response.ok) {
+          const text = await response.text();
+          appendMessage(
+            "error",
+            text || "Failed to start Ghost AI. Please try again.",
+          );
+        }
+      } catch {
+        appendMessage(
+          "error",
+          "Network error reaching Ghost AI. Please try again.",
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
     },
-    [],
+    [appendMessage, isSubmitting, projectId, roomId],
   );
 
   const handleSend = useCallback(() => {
-    submitDraft(draft);
+    void submitDraft(draft);
   }, [draft, submitDraft]);
 
   const handleStarterClick = useCallback(
     (prompt: string) => {
-      submitDraft(prompt);
+      void submitDraft(prompt);
     },
     [submitDraft],
   );
@@ -78,7 +149,7 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
     (event: KeyboardEvent<HTMLTextAreaElement>) => {
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
-        submitDraft(draft);
+        void submitDraft(draft);
       }
     },
     [draft, submitDraft],
@@ -87,7 +158,7 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
   return (
     <aside
       className={cn(
-        "absolute top-0 right-0 z-20 hidden h-full w-96 flex-col border-l border-border-default bg-bg-base/95 shadow-2xl backdrop-blur-md transition-transform duration-200 md:flex",
+        "absolute top-0 right-0 z-30 hidden h-full w-96 flex-col border-l border-border-default bg-bg-base/95 shadow-2xl backdrop-blur-md transition-transform duration-200 md:flex",
         isOpen ? "translate-x-0" : "translate-x-full pointer-events-none",
       )}
       aria-hidden={!isOpen}
@@ -139,7 +210,10 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
           value="architect"
           className="flex min-h-0 flex-1 flex-col gap-0"
         >
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
+          <div
+            ref={scrollRef}
+            className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4"
+          >
             {messages.length === 0 ? (
               <ArchitectEmptyState onStarterClick={handleStarterClick} />
             ) : (
@@ -147,6 +221,12 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
                 {messages.map((message) => (
                   <ChatBubble key={message.id} message={message} />
                 ))}
+                {isSubmitting ? (
+                  <div className="flex items-center gap-2 text-xs text-text-muted">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Triggering Ghost AI...
+                  </div>
+                ) : null}
               </div>
             )}
           </div>
@@ -159,12 +239,13 @@ export function AiSidebar({ isOpen, onClose }: AiSidebarProps) {
                 onKeyDown={handleTextareaKeyDown}
                 placeholder="Ask Ghost AI to design something..."
                 className="min-h-[72px] max-h-[160px] resize-none bg-bg-elevated text-sm text-text-primary placeholder:text-text-muted"
+                disabled={isSubmitting}
               />
               <Button
                 type="button"
                 size="icon"
                 onClick={handleSend}
-                disabled={draft.trim().length === 0}
+                disabled={draft.trim().length === 0 || isSubmitting}
                 aria-label="Send message"
                 className="bg-accent-primary text-white hover:bg-accent-primary/90"
               >
@@ -240,6 +321,26 @@ function ChatBubble({ message }: ChatBubbleProps) {
     return (
       <div className="flex justify-end">
         <div className="max-w-[85%] rounded-2xl border-2 border-accent-primary/50 bg-accent-primary-dim px-3 py-2 text-sm text-text-primary">
+          {message.content}
+        </div>
+      </div>
+    );
+  }
+  if (message.role === "error") {
+    return (
+      <div className="flex justify-start">
+        <div className="flex max-w-[85%] items-start gap-2 rounded-2xl border border-state-error/40 bg-state-error/10 px-3 py-2 text-sm text-state-error">
+          <TriangleAlert className="h-4 w-4 shrink-0" />
+          <span>{message.content}</span>
+        </div>
+      </div>
+    );
+  }
+  if (message.role === "status") {
+    return (
+      <div className="flex justify-start">
+        <div className="flex max-w-[85%] items-center gap-2 rounded-full border border-border-default bg-bg-subtle px-3 py-1 text-xs text-text-muted">
+          <Loader2 className="h-3 w-3 animate-spin" />
           {message.content}
         </div>
       </div>
