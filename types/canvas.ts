@@ -44,6 +44,9 @@ export const DEFAULT_NODE_SIZES: Record<CanvasNodeShape, CanvasNodeSize> = {
   hexagon: { width: 160, height: 100 },
 };
 
+// Floor for node resizing so nodes never shrink past a usable footprint.
+export const MIN_NODE_SIZE: CanvasNodeSize = { width: 80, height: 48 };
+
 export interface CanvasNodeData extends Record<string, unknown> {
   label: string;
   color: CanvasNodeColor;
