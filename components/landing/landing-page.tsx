@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { SVGProps } from "react";
+import { SystemTabsTransformation } from "./system-tabs-transformation";
 
 function LogoMark(props: SVGProps<SVGSVGElement>) {
   return (
@@ -1243,237 +1244,6 @@ function ReviewSection() {
   );
 }
 
-function WindowChrome({ label, file, dim }: { label: string; file: string; dim?: boolean }) {
-  return (
-    <div
-      className={
-        "flex items-center gap-2 border-b border-border-faint px-3 py-2 font-mono text-[9px] uppercase tracking-[0.14em] " +
-        (dim ? "text-text-faint" : "text-text-muted")
-      }
-    >
-      <span className="flex gap-1">
-        <span className="h-1.5 w-1.5 rounded-full bg-[#4A4A4A]" />
-        <span className="h-1.5 w-1.5 rounded-full bg-[#3A3A3A]" />
-        <span className="h-1.5 w-1.5 rounded-full bg-[#2A2A2A]" />
-      </span>
-      <span className="ml-1.5">{label}</span>
-      <span className="text-text-faint">/</span>
-      <span className="truncate">{file}</span>
-    </div>
-  );
-}
-
-function ChaosFigmaWindow() {
-  return (
-    <svg viewBox="0 0 260 140" className="w-full h-full" role="img" aria-label="A messy diagram in a design tool">
-      <rect width="260" height="140" fill="#0A0A0A" />
-      <g opacity="0.9">
-        <rect x="22" y="20" width="60" height="32" rx="2" fill="none" stroke="#4A4A4A" />
-        <rect x="110" y="20" width="60" height="32" rx="2" fill="none" stroke="#4A4A4A" />
-        <rect x="198" y="20" width="40" height="32" rx="2" fill="none" stroke="#4A4A4A" strokeDasharray="2 3" />
-        <rect x="22" y="76" width="60" height="32" rx="2" fill="none" stroke="#4A4A4A" />
-        <rect x="110" y="76" width="60" height="40" rx="2" fill="none" stroke="#4A4A4A" />
-        <path d="M82 36 H110 M170 36 H198 M52 52 V76 M140 52 V76 M82 92 H110" stroke="#3A3A3A" strokeDasharray="3 2" />
-        <text x="30" y="38" fontFamily="JetBrains Mono" fontSize="7" fill="#6E6E6E">web</text>
-        <text x="118" y="38" fontFamily="JetBrains Mono" fontSize="7" fill="#6E6E6E">api?</text>
-        <text x="206" y="38" fontFamily="JetBrains Mono" fontSize="7" fill="#6E6E6E">stripe</text>
-        <text x="30" y="94" fontFamily="JetBrains Mono" fontSize="7" fill="#6E6E6E">workr</text>
-        <text x="118" y="94" fontFamily="JetBrains Mono" fontSize="7" fill="#6E6E6E">db (old?)</text>
-      </g>
-      <g stroke="#E07474" strokeWidth="1.5" opacity="0.7">
-        <path d="M198 76 L 238 116" />
-        <path d="M238 76 L 198 116" />
-      </g>
-      <text x="200" y="124" fontFamily="JetBrains Mono" fontSize="6" fill="#E07474" opacity="0.8">outdated</text>
-    </svg>
-  );
-}
-
-function ChaosExcalidrawWindow() {
-  return (
-    <svg viewBox="0 0 260 140" className="w-full h-full" role="img" aria-label="A hand-sketched diagram">
-      <rect width="260" height="140" fill="#0A0A0A" />
-      <g fill="none" stroke="#A1A1A1" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" opacity="0.85">
-        <path d="M30 28 q3 -4 8 -3 l50 1 q4 0 4 4 l-1 22 q0 4 -4 4 l-50 -1 q-4 0 -4 -4 z" />
-        <path d="M120 22 q3 -4 8 -3 l50 1 q4 0 4 4 l-1 24 q0 4 -4 4 l-50 -1 q-4 0 -4 -4 z" />
-        <path d="M40 90 q3 -4 8 -3 l60 1 q4 0 4 4 l-1 24 q0 4 -4 4 l-60 -1 q-4 0 -4 -4 z" />
-        <path d="M90 38 q12 2 22 -2" />
-        <path d="M150 50 q-5 18 -90 38" />
-        <path d="M170 90 q3 -4 8 -3 l50 1 q4 0 4 4 l-1 24 q0 4 -4 4 l-50 -1 q-4 0 -4 -4 z" />
-        <path d="M120 102 q26 -2 50 0" />
-      </g>
-      <g fontFamily="Inter" fontSize="10" fill="#A1A1A1" fontStyle="italic">
-        <text x="40" y="46">browser?</text>
-        <text x="128" y="42">api</text>
-        <text x="50" y="106">orders</text>
-        <text x="178" y="106">??</text>
-      </g>
-      <g stroke="#D4A55B" strokeWidth="1.2" opacity="0.7">
-        <path d="M220 28 l 12 -8 M232 20 l -2 8 M232 20 l -8 0" />
-      </g>
-    </svg>
-  );
-}
-
-function ChaosNotionWindow() {
-  return (
-    <svg viewBox="0 0 260 140" className="w-full h-full" role="img" aria-label="A long unread spec document">
-      <rect width="260" height="140" fill="#0A0A0A" />
-      <g fontFamily="Inter" fill="#A1A1A1">
-        <text x="20" y="22" fontSize="11" fontWeight="600" fill="#FFFFFF">Checkout — RFC v3 (?)</text>
-        <text x="20" y="38" fontSize="8" fill="#6E6E6E">## Components</text>
-        <rect x="20" y="44" width="200" height="2" fill="#1F1F1F" />
-        <rect x="20" y="54" width="180" height="2" fill="#1F1F1F" />
-        <rect x="20" y="64" width="190" height="2" fill="#1F1F1F" />
-        <text x="20" y="82" fontSize="8" fill="#6E6E6E">## Open questions</text>
-        <rect x="20" y="88" width="160" height="2" fill="#1F1F1F" />
-        <rect x="20" y="98" width="170" height="2" fill="#1F1F1F" />
-        <rect x="20" y="108" width="120" height="2" fill="#1F1F1F" />
-        <rect x="20" y="118" width="150" height="2" fill="#1F1F1F" />
-        <text x="20" y="132" fontSize="7" fill="#4A4A4A" fontStyle="italic">last edited 2 mo ago</text>
-      </g>
-    </svg>
-  );
-}
-
-function ChaosWhiteboardWindow() {
-  return (
-    <svg viewBox="0 0 260 140" className="w-full h-full" role="img" aria-label="A whiteboard photo full of arrows">
-      <rect width="260" height="140" fill="#0A0A0A" />
-      <g fill="none" stroke="#6E6E6E" strokeWidth="1" opacity="0.7">
-        <circle cx="50" cy="40" r="14" />
-        <circle cx="130" cy="34" r="14" />
-        <circle cx="210" cy="50" r="14" />
-        <circle cx="90" cy="100" r="14" />
-        <circle cx="190" cy="100" r="14" />
-        <path d="M62 44 L 118 38" />
-        <path d="M142 38 L 198 48" />
-        <path d="M55 54 L 84 88" />
-        <path d="M138 46 L 100 88" />
-        <path d="M198 60 L 200 88" />
-        <path d="M100 100 L 178 100" />
-        <path d="M204 92 L 70 50" strokeDasharray="2 2" />
-        <path d="M150 110 L 60 58" strokeDasharray="2 2" />
-      </g>
-      <g fontFamily="Inter" fontSize="8" fill="#A1A1A1" fontStyle="italic">
-        <text x="38" y="42">A</text>
-        <text x="118" y="36">B?</text>
-        <text x="198" y="52">C</text>
-        <text x="78" y="102">D</text>
-        <text x="178" y="102">??</text>
-      </g>
-      <text x="20" y="128" fontFamily="Inter" fontSize="7" fill="#6E6E6E" fontStyle="italic">IMG_2384.jpg · 4 wks ago</text>
-    </svg>
-  );
-}
-
-function CalmCanvasWindow() {
-  return (
-    <svg viewBox="0 0 360 240" className="w-full h-full" role="img" aria-label="A clean Arqitect canvas">
-      <defs>
-        <pattern id="calm-dots" width="14" height="14" patternUnits="userSpaceOnUse">
-          <circle cx="1" cy="1" r="0.8" fill="rgba(255,255,255,0.07)" />
-        </pattern>
-        <marker id="calm-ar" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-          <path d="M0,0 L6,3 L0,6 z" fill="#3A3A3A" />
-        </marker>
-      </defs>
-      <rect width="360" height="240" fill="url(#calm-dots)" />
-      <g fill="none" stroke="#2A2A2A" strokeWidth="1.1">
-        <path d="M70 50 H 116" markerEnd="url(#calm-ar)" />
-        <path d="M180 50 H 226" markerEnd="url(#calm-ar)" />
-        <path d="M150 66 V 110" markerEnd="url(#calm-ar)" />
-        <path d="M150 138 V 178" markerEnd="url(#calm-ar)" />
-        <path d="M260 66 V 110" markerEnd="url(#calm-ar)" />
-      </g>
-      <g fontFamily="Inter" fontSize="10" fontWeight="600" fill="#FFFFFF">
-        <g transform="translate(24 36)">
-          <rect width="46" height="28" rx="4" fill="#0A0A0A" stroke="#1F1F1F" />
-          <text x="23" y="18" textAnchor="middle">Web</text>
-        </g>
-        <g transform="translate(116 36)">
-          <rect width="64" height="28" rx="4" fill="#0A0A0A" stroke="#FFFFFF" />
-          <text x="32" y="18" textAnchor="middle">API</text>
-        </g>
-        <g transform="translate(226 36)">
-          <rect width="68" height="28" rx="4" fill="#0A0A0A" stroke="#1F1F1F" />
-          <text x="34" y="18" textAnchor="middle">Stripe</text>
-        </g>
-        <g transform="translate(116 110)">
-          <rect width="64" height="28" rx="4" fill="#0A0A0A" stroke="#1F1F1F" />
-          <text x="32" y="18" textAnchor="middle">Orders</text>
-        </g>
-        <g transform="translate(226 110)">
-          <rect width="68" height="28" rx="4" fill="#0A0A0A" stroke="#1F1F1F" />
-          <text x="34" y="18" textAnchor="middle">DB</text>
-        </g>
-        <g transform="translate(116 178)">
-          <rect width="64" height="26" rx="13" fill="#0A0A0A" stroke="#1F1F1F" strokeDasharray="2 3" />
-          <text x="32" y="17" textAnchor="middle" fill="#A1A1A1" fontWeight="500">queue</text>
-        </g>
-      </g>
-      <g fontFamily="JetBrains Mono" fontSize="7" fill="#6E6E6E">
-        <text x="74" y="46">REST</text>
-        <text x="184" y="46">webhook</text>
-        <text x="156" y="92">sql</text>
-        <text x="156" y="160">event</text>
-      </g>
-    </svg>
-  );
-}
-
-function ChaosTile({
-  rotate,
-  top,
-  left,
-  width,
-  zIndex,
-  tool,
-  file,
-  pinRole,
-  pinQuote,
-  children,
-}: {
-  rotate: number;
-  top: string;
-  left: string;
-  width: string;
-  zIndex: number;
-  tool: string;
-  file: string;
-  pinRole: string;
-  pinQuote: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className="absolute origin-center"
-      style={{
-        top,
-        left,
-        width,
-        transform: `rotate(${rotate}deg)`,
-        zIndex,
-      }}
-    >
-      <div className="overflow-hidden rounded-lg border border-border-default bg-bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.6)]">
-        <WindowChrome label={tool} file={file} dim />
-        <div className="aspect-[13/7] w-full">{children}</div>
-      </div>
-      <div className="absolute -bottom-3 left-3 right-3 translate-y-full">
-        <div className="rounded-md border border-border-default bg-bg-elevated px-3 py-2.5 shadow-[0_12px_30px_rgba(0,0,0,0.5)]">
-          <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-state-error/80">
-            {pinRole}
-          </p>
-          <p className="mt-1 font-sans text-[12px] italic leading-[1.45] text-text-secondary">
-            &ldquo;{pinQuote}&rdquo;
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function SoundFamiliarSection() {
   const personas = [
     {
@@ -1495,150 +1265,33 @@ function SoundFamiliarSection() {
   ];
 
   return (
-    <section
-      id="use-cases"
-      className={"relative overflow-hidden " + SECTION_PADDING}
-      data-reveal
-    >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-60"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, var(--grid-line) 1px, transparent 1px), linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
-          WebkitMaskImage:
-            "radial-gradient(ellipse 70% 55% at 50% 30%, #000 30%, transparent 90%)",
-          maskImage:
-            "radial-gradient(ellipse 70% 55% at 50% 30%, #000 30%, transparent 90%)",
-        }}
-        aria-hidden
-      />
-
-      <div className="relative mx-auto max-w-[1320px]">
-        <div className="mx-auto max-w-[760px] text-center">
-          <p className="inline-flex items-center gap-2.5 rounded-full border border-border-default bg-bg-surface px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-text-muted">
-            <span className="h-1.5 w-1.5 rounded-full bg-state-error" />
-            Are you still doing this?
-          </p>
-          <h2 className="mt-5 font-sans text-[clamp(32px,4.2vw,52px)] font-semibold leading-[1.04] tracking-[-0.032em] text-text-primary text-balance">
-            Your system lives
-            <br />
-            <span className="text-text-secondary line-through decoration-state-error/60 decoration-[3px]">
-              in five different tabs.
-            </span>
-          </h2>
-          <p className="mx-auto mt-5 max-w-[560px] text-[15.5px] leading-[1.65] text-text-secondary">
-            Excalidraw for the sketch. Figma for the demo. Notion for the spec. A
-            whiteboard photo for the rest. None of them agree.
-          </p>
-        </div>
-
-        <div className="relative mt-20 grid items-stretch gap-10 lg:mt-24 lg:grid-cols-[1.05fr_56px_0.95fr] lg:gap-0">
-          <div className="relative h-[440px] min-h-[440px] md:h-[520px] lg:h-[640px]">
-            <ChaosTile
-              rotate={-6}
-              top="2%"
-              left="2%"
-              width="58%"
-              zIndex={1}
-              tool="excalidraw.com"
-              file="checkout-sketch"
-              pinRole="Engineering lead"
-              pinQuote="I redrew this in Figma, then Excalidraw, then Notion. None of them match anymore."
-            >
-              <ChaosExcalidrawWindow />
-            </ChaosTile>
-
-            <ChaosTile
-              rotate={4}
-              top="6%"
-              left="38%"
-              width="58%"
-              zIndex={3}
-              tool="figma.com"
-              file="checkout.v3.fig"
-              pinRole="Architect"
-              pinQuote="Every review meeting starts with — wait, what is this thing?"
-            >
-              <ChaosFigmaWindow />
-            </ChaosTile>
-
-            <ChaosTile
-              rotate={-3}
-              top="48%"
-              left="6%"
-              width="54%"
-              zIndex={2}
-              tool="notion.so"
-              file="rfc-3-final-FINAL.md"
-              pinRole="Product squad"
-              pinQuote="Engineering, product, and design all describe this system differently."
-            >
-              <ChaosNotionWindow />
-            </ChaosTile>
-
-            <ChaosTile
-              rotate={7}
-              top="54%"
-              left="42%"
-              width="54%"
-              zIndex={4}
-              tool="dropbox"
-              file="IMG_2384.jpg"
-              pinRole="Tech founder"
-              pinQuote="I can't tell if this design holds up at 10x. Or 2x."
-            >
-              <ChaosWhiteboardWindow />
-            </ChaosTile>
-
-            <div className="pointer-events-none absolute -left-2 -top-2 z-10 rotate-[-12deg]">
-              <span className="inline-block border border-state-error/60 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-state-error">
-                Without Arqitect
-              </span>
-            </div>
+    <>
+      <SystemTabsTransformation />
+      <section className={"relative overflow-hidden " + SECTION_PADDING} data-reveal>
+        <div
+          className="pointer-events-none absolute inset-0 opacity-60"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, var(--grid-line) 1px, transparent 1px), linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+            WebkitMaskImage:
+              "radial-gradient(ellipse 70% 55% at 50% 30%, #000 30%, transparent 90%)",
+            maskImage:
+              "radial-gradient(ellipse 70% 55% at 50% 30%, #000 30%, transparent 90%)",
+          }}
+          aria-hidden
+        />
+        <div className="relative mx-auto max-w-[1320px]">
+          <div className="mx-auto max-w-[760px] text-center">
+            <p className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-text-muted">
+              Built for the review after the reveal
+            </p>
+            <h2 className="mt-4 font-sans text-[clamp(32px,4.2vw,52px)] font-semibold leading-[1.04] tracking-[-0.032em] text-text-primary text-balance">
+              One canvas. The diagram is the spec.
+            </h2>
           </div>
 
-          <div className="relative flex flex-col items-center justify-center">
-            <div className="hidden h-full w-px bg-gradient-to-b from-transparent via-border-default to-transparent lg:block" />
-            <div className="absolute inset-0 hidden items-center justify-center lg:flex">
-              <span className="rounded-full border border-border-default bg-bg-base px-3 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-text-secondary">
-                Arqitect →
-              </span>
-            </div>
-            <div className="flex items-center justify-center lg:hidden">
-              <span className="rounded-full border border-border-default bg-bg-base px-3 py-2 font-mono text-[10px] uppercase tracking-[0.18em] text-text-secondary">
-                ↓ Arqitect ↓
-              </span>
-            </div>
-          </div>
-
-          <div className="relative flex items-center">
-            <div className="relative w-full">
-              <div className="pointer-events-none absolute -right-2 -top-2 z-10 rotate-[8deg]">
-                <span className="inline-flex items-center gap-1.5 border border-state-success/60 bg-bg-base px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-state-success">
-                  <span className="h-1.5 w-1.5 rounded-full bg-state-success" />
-                  With Arqitect
-                </span>
-              </div>
-              <div className="overflow-hidden rounded-xl border border-border-default bg-bg-canvas shadow-[0_36px_100px_rgba(0,0,0,0.75)]">
-                <WindowChrome label="arqitect.dev" file="checkout-v2 · canvas" />
-                <CalmCanvasWindow />
-                <div className="grid grid-cols-2 gap-px border-t border-border-faint bg-border-faint font-mono text-[11px]">
-                  <div className="flex items-center gap-2 bg-bg-surface px-4 py-3 text-text-secondary">
-                    <span className="h-1.5 w-1.5 rounded-full bg-state-success" />
-                    spec.md · in sync
-                  </div>
-                  <div className="flex items-center gap-2 bg-bg-surface px-4 py-3 text-text-secondary">
-                    <SparkIcon className="h-3.5 w-3.5 text-text-primary" />
-                    AI · 0 issues
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-20 grid border border-border-default md:grid-cols-4">
+          <div className="mt-14 grid border border-border-default md:grid-cols-4">
           {personas.map((p, i) => (
             <article
               key={p.role}
@@ -1660,25 +1313,26 @@ function SoundFamiliarSection() {
               </h3>
             </article>
           ))}
-        </div>
+          </div>
 
-        <div className="mt-12 flex flex-col items-center justify-center gap-2.5 sm:flex-row">
-          <Link
-            href="/sign-up"
-            className="inline-flex h-11 items-center gap-2.5 rounded-md bg-text-primary px-4.5 text-[13px] font-medium text-bg-base transition-colors hover:bg-[#E8E8E8]"
-          >
-            Get started
-            <ArrowRightIcon className="h-3.5 w-3.5" />
-          </Link>
-          <a
-            href="#how"
-            className="inline-flex h-11 items-center gap-2.5 rounded-md border border-border-subtle px-4.5 text-[13px] font-medium text-text-primary transition-colors hover:border-[#3A3A3A] hover:bg-bg-surface"
-          >
-            Show me how
-          </a>
+          <div className="mt-12 flex flex-col items-center justify-center gap-2.5 sm:flex-row">
+            <Link
+              href="/sign-up"
+              className="inline-flex h-11 items-center gap-2.5 rounded-md bg-text-primary px-4.5 text-[13px] font-medium text-bg-base transition-colors hover:bg-[#E8E8E8]"
+            >
+              Get started
+              <ArrowRightIcon className="h-3.5 w-3.5" />
+            </Link>
+            <a
+              href="#how"
+              className="inline-flex h-11 items-center gap-2.5 rounded-md border border-border-subtle px-4.5 text-[13px] font-medium text-text-primary transition-colors hover:border-[#3A3A3A] hover:bg-bg-surface"
+            >
+              Show me how
+            </a>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }
 
