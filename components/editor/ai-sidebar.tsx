@@ -8,7 +8,10 @@ import {
   useState,
   type ChangeEvent,
   type KeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
 } from "react";
+import { useReactFlow } from "@xyflow/react";
 import {
   useCreateFeed,
   useCreateFeedMessage,
@@ -17,6 +20,8 @@ import {
 } from "@liveblocks/react/suspense";
 import { useUser } from "@clerk/nextjs";
 import { useRealtimeRun } from "@trigger.dev/react-hooks";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Bot,
   Download,
@@ -32,13 +37,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import {
   AI_ASSISTANT_SENDER_ID,
   AI_ASSISTANT_SENDER_NAME,
   AI_CHAT_FEED_ID,
   AI_STATUS_FEED_ID,
-  isActiveAiStatusPhase,
   parseAiChatMessagePayload,
   parseAiStatusFeedPayload,
   type AiChatMessagePayload,
@@ -223,15 +235,7 @@ export function AiSidebar({
           value="specs"
           className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4"
         >
-          <Button
-            type="button"
-            className="w-full bg-accent-primary text-white hover:bg-accent-primary/90"
-          >
-            <Sparkles className="h-4 w-4" />
-            Generate Spec
-          </Button>
-
-          <SpecCard />
+          <SpecsTab projectId={projectId} roomId={roomId} />
         </TabsContent>
       </Tabs>
     </aside>
@@ -1021,35 +1025,595 @@ function formatChatTimestamp(timestamp: number): string {
   }
 }
 
-function SpecCard() {
-  return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border-default bg-bg-elevated p-4">
-      <div className="flex items-start gap-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border-default bg-bg-subtle text-accent-ai-text">
-          <FileText className="h-4 w-4" />
+interface SpecListItem {
+  id: string;
+  createdAt: string;
+  filename: string;
+}
+
+interface SpecsTabProps {
+  projectId: string;
+  roomId: string;
+}
+
+interface SpecsLoadResult {
+  specs: SpecListItem[];
+  error: string | null;
+}
+
+function SpecsTab({ projectId, roomId }: SpecsTabProps) {
+  const reactFlow = useReactFlow();
+  const chatItems = useAiChatMessages();
+  const latestStatus = useLatestAiStatus();
+
+  const [specs, setSpecs] = useState<SpecListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [activeSpec, setActiveSpec] = useState<SpecListItem | null>(null);
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+
+  const loadSpecs = useCallback(async (): Promise<SpecsLoadResult> => {
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/specs`,
+        { cache: "no-store" },
+      );
+      if (!response.ok) {
+        return { specs: [], error: "Failed to load specs." };
+      }
+      const data = (await response.json()) as { specs?: SpecListItem[] };
+      return {
+        specs: Array.isArray(data.specs) ? data.specs : [],
+        error: null,
+      };
+    } catch {
+      return { specs: [], error: "Failed to load specs." };
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const result = await loadSpecs();
+      if (!cancelled) {
+        setSpecs(result.specs);
+        setLoadError(result.error);
+        setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadSpecs]);
+
+  // Watch the ai-status-feed for the active spec run; when the matching run
+  // emits complete or error, refresh the list and clear the active state.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function settleActiveRun() {
+      if (!activeRunId || !latestStatus) {
+        return;
+      }
+      const payload = latestStatus.payload;
+      if (payload.kind !== "spec" || payload.runId !== activeRunId) {
+        return;
+      }
+      if (payload.phase === "complete") {
+        const result = await loadSpecs();
+        if (cancelled) {
+          return;
+        }
+        setSpecs(result.specs);
+        setLoadError(result.error);
+        setActiveRunId(null);
+        setGenerateError(null);
+      } else if (payload.phase === "error") {
+        await Promise.resolve();
+        if (cancelled) {
+          return;
+        }
+        setActiveRunId(null);
+        setGenerateError(
+          payload.text?.trim() || "Spec generation failed.",
+        );
+      }
+    }
+
+    void settleActiveRun();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeRunId, latestStatus, loadSpecs]);
+
+  const handleGenerate = useCallback(async () => {
+    if (isStarting || activeRunId) {
+      return;
+    }
+    setIsStarting(true);
+    setGenerateError(null);
+
+    const chatHistory = chatItems
+      .filter(
+        (item) =>
+          item.payload.role === "user" || item.payload.role === "assistant",
+      )
+      .map((item) => ({
+        role: item.payload.role,
+        content: item.payload.content,
+      }));
+
+    const nodes = reactFlow.getNodes();
+    const edges = reactFlow.getEdges();
+
+    try {
+      const response = await fetch("/api/ai/spec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomId,
+          chatHistory,
+          nodes,
+          edges,
+        }),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        setGenerateError(text || "Failed to start spec generation.");
+        return;
+      }
+      const data = (await response.json()) as { runId?: string };
+      if (typeof data.runId === "string" && data.runId.length > 0) {
+        setActiveRunId(data.runId);
+      } else {
+        setGenerateError("Spec run did not start.");
+      }
+    } catch {
+      setGenerateError("Network error starting spec generation.");
+    } finally {
+      setIsStarting(false);
+    }
+  }, [activeRunId, chatItems, isStarting, reactFlow, roomId]);
+
+  const isGenerating = isStarting || activeRunId !== null;
+
+  const downloadSpec = useCallback(
+    (specId: string, filename: string) => {
+      const anchor = document.createElement("a");
+      anchor.href = `/api/projects/${projectId}/specs/${specId}/download`;
+      anchor.download = filename;
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    },
+    [projectId],
+  );
+
+  const statusForActiveRun =
+    activeRunId &&
+    latestStatus &&
+    latestStatus.payload.kind === "spec" &&
+    latestStatus.payload.runId === activeRunId
+      ? latestStatus.payload
+      : null;
+
+  const generateButton = (
+    <Button
+      type="button"
+      onClick={() => void handleGenerate()}
+      disabled={isGenerating}
+      className="w-full bg-accent-primary text-white hover:bg-accent-primary/90 disabled:opacity-60"
+    >
+      {isGenerating ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Sparkles className="h-4 w-4" />
+      )}
+      {isGenerating ? "Generating..." : "Generate Spec"}
+    </Button>
+  );
+
+  const generateStatusStrip = statusForActiveRun ? (
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex items-center gap-2 rounded-md border border-border-default bg-bg-elevated px-2.5 py-1.5 text-xs text-text-primary"
+    >
+      <Loader2
+        className="h-3 w-3 shrink-0 animate-spin"
+        style={{ color: STATUS_ACCENT }}
+        aria-hidden
+      />
+      <span className="truncate">
+        {statusForActiveRun.text?.trim() ||
+          defaultSpecStatusText(statusForActiveRun.phase)}
+      </span>
+    </div>
+  ) : null;
+
+  const generateErrorBanner = generateError ? (
+    <div className="flex items-center gap-2 rounded-md border border-state-error/40 bg-state-error/10 px-3 py-2 text-xs text-state-error">
+      <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+      <span>{generateError}</span>
+    </div>
+  ) : null;
+
+  let body: ReactNode;
+  if (isLoading) {
+    body = (
+      <div className="flex flex-1 items-center justify-center py-6 text-xs text-text-muted">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Loading specs...
+      </div>
+    );
+  } else if (loadError) {
+    body = (
+      <div className="flex items-center gap-2 rounded-md border border-state-error/40 bg-state-error/10 px-3 py-2 text-xs text-state-error">
+        <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+        <span>{loadError}</span>
+      </div>
+    );
+  } else if (specs.length === 0) {
+    body = (
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 py-6 text-center">
+        <div className="flex size-12 items-center justify-center rounded-2xl border border-border-default bg-bg-elevated text-accent-ai-text">
+          <FileText className="h-6 w-6" />
         </div>
-        <div className="flex min-w-0 flex-1 flex-col">
-          <h3 className="truncate text-sm font-medium text-text-primary">
-            E-commerce Backend Spec
-          </h3>
-          <p className="mt-1 line-clamp-2 text-xs text-text-muted">
-            Generated architecture overview covering services, data flow, and
-            integration points.
+        <div className="flex flex-col gap-1">
+          <p className="text-sm font-medium text-text-primary">
+            No specs yet
+          </p>
+          <p className="max-w-64 text-xs text-text-muted">
+            Generated specs will appear here.
           </p>
         </div>
       </div>
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled
-          className="text-text-muted"
-        >
-          <Download className="h-4 w-4" />
-          Download
-        </Button>
-      </div>
+    );
+  } else {
+    body = (
+      <ul className="flex flex-col gap-2">
+        {specs.map((spec) => (
+          <li key={spec.id}>
+            <SpecListRow
+              spec={spec}
+              onOpen={() => setActiveSpec(spec)}
+              onDownload={() => downloadSpec(spec.id, spec.filename)}
+            />
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  return (
+    <>
+      {generateButton}
+      {generateStatusStrip}
+      {generateErrorBanner}
+      {body}
+
+      <SpecPreviewDialog
+        spec={activeSpec}
+        projectId={projectId}
+        onClose={() => setActiveSpec(null)}
+        onDownload={() => {
+          if (activeSpec) {
+            downloadSpec(activeSpec.id, activeSpec.filename);
+          }
+        }}
+      />
+    </>
+  );
+}
+
+function defaultSpecStatusText(phase: AiStatusFeedPayload["phase"]): string {
+  switch (phase) {
+    case "starting":
+      return "Ghost AI is reading your canvas...";
+    case "thinking":
+      return "Drafting technical specification...";
+    case "applying":
+      return "Finalizing spec...";
+    case "complete":
+      return "Specification ready.";
+    case "error":
+      return "Ghost AI hit an error.";
+  }
+}
+
+interface SpecListRowProps {
+  spec: SpecListItem;
+  onOpen: () => void;
+  onDownload: () => void;
+}
+
+function SpecListRow({ spec, onOpen, onDownload }: SpecListRowProps) {
+  const handleDownloadClick = useCallback(
+    (event: ReactMouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      onDownload();
+    },
+    [onDownload],
+  );
+
+  return (
+    <div
+      className="group flex w-full items-start gap-3 rounded-xl border border-border-default bg-bg-elevated p-3 transition-colors hover:bg-bg-subtle"
+    >
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex min-w-0 flex-1 items-start gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/50"
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border-default bg-bg-subtle text-accent-ai-text">
+          <FileText className="h-4 w-4" />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-sm font-medium text-text-primary">
+            {spec.filename}
+          </span>
+          <span className="mt-0.5 text-[11px] text-text-muted">
+            {formatSpecTimestamp(spec.createdAt)}
+          </span>
+        </span>
+      </button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        onClick={handleDownloadClick}
+        aria-label={`Download ${spec.filename}`}
+        className="shrink-0 text-text-muted hover:text-text-primary"
+      >
+        <Download className="h-4 w-4" />
+      </Button>
     </div>
   );
+}
+
+interface SpecPreviewDialogProps {
+  spec: SpecListItem | null;
+  projectId: string;
+  onClose: () => void;
+  onDownload: () => void;
+}
+
+function SpecPreviewDialog({
+  spec,
+  projectId,
+  onClose,
+  onDownload,
+}: SpecPreviewDialogProps) {
+  const [content, setContent] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) {
+        return;
+      }
+      if (!spec) {
+        setContent(null);
+        setError(null);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+      setContent(null);
+
+      try {
+        const response = await fetch(
+          `/api/projects/${projectId}/specs/${spec.id}/download`,
+          { cache: "no-store" },
+        );
+        if (!response.ok) {
+          if (!cancelled) {
+            setError("Failed to load spec content.");
+          }
+          return;
+        }
+        const text = await response.text();
+        if (!cancelled) {
+          setContent(text);
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Failed to load spec content.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [spec, projectId]);
+
+  const open = spec !== null;
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        if (!value) {
+          onClose();
+        }
+      }}
+    >
+      <DialogContent className="flex h-[80vh] max-h-[800px] w-[min(900px,calc(100%-2rem))] max-w-[900px] flex-col gap-3 p-0 sm:max-w-[900px]">
+        <DialogHeader className="flex flex-row items-start justify-between gap-3 border-b border-border-default px-5 py-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <DialogTitle className="truncate">
+              {spec?.filename ?? "Spec preview"}
+            </DialogTitle>
+            <DialogDescription>
+              {spec ? formatSpecTimestamp(spec.createdAt) : ""}
+            </DialogDescription>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onDownload}
+            disabled={!spec}
+            className="mr-8"
+          >
+            <Download className="h-4 w-4" />
+            Download
+          </Button>
+        </DialogHeader>
+
+        <ScrollArea className="min-h-0 flex-1 px-5">
+          {isLoading ? (
+            <div className="flex h-full items-center justify-center py-12 text-xs text-text-muted">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Loading spec...
+            </div>
+          ) : error ? (
+            <div className="m-4 flex items-center gap-2 rounded-md border border-state-error/40 bg-state-error/10 px-3 py-2 text-xs text-state-error">
+              <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          ) : content !== null ? (
+            <SpecMarkdown content={content} />
+          ) : null}
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function SpecMarkdown({ content }: { content: string }) {
+  return (
+    <div className="py-4 text-sm text-text-primary">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          h1: ({ children }) => (
+            <h1 className="mt-2 mb-3 text-xl font-semibold text-text-primary">
+              {children}
+            </h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className="mt-5 mb-2 text-base font-semibold text-text-primary">
+              {children}
+            </h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="mt-4 mb-1.5 text-sm font-semibold text-text-primary">
+              {children}
+            </h3>
+          ),
+          p: ({ children }) => (
+            <p className="mb-3 leading-relaxed text-text-primary">{children}</p>
+          ),
+          ul: ({ children }) => (
+            <ul className="mb-3 list-disc space-y-1 pl-5 text-text-primary">
+              {children}
+            </ul>
+          ),
+          ol: ({ children }) => (
+            <ol className="mb-3 list-decimal space-y-1 pl-5 text-text-primary">
+              {children}
+            </ol>
+          ),
+          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+          a: ({ children, href }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent-primary underline underline-offset-2 hover:opacity-80"
+            >
+              {children}
+            </a>
+          ),
+          strong: ({ children }) => (
+            <strong className="font-semibold text-text-primary">
+              {children}
+            </strong>
+          ),
+          em: ({ children }) => <em className="italic">{children}</em>,
+          code: ({ children, className }) => {
+            const isBlock = className?.includes("language-");
+            if (isBlock) {
+              return (
+                <code className={cn("font-mono text-xs", className)}>
+                  {children}
+                </code>
+              );
+            }
+            return (
+              <code className="rounded bg-bg-elevated px-1 py-0.5 font-mono text-[12px] text-text-primary">
+                {children}
+              </code>
+            );
+          },
+          pre: ({ children }) => (
+            <pre className="mb-3 overflow-x-auto rounded-md border border-border-default bg-bg-elevated p-3 font-mono text-xs leading-relaxed text-text-primary">
+              {children}
+            </pre>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote className="mb-3 border-l-2 border-border-default pl-3 text-text-muted italic">
+              {children}
+            </blockquote>
+          ),
+          hr: () => <hr className="my-4 border-border-default" />,
+          table: ({ children }) => (
+            <div className="mb-3 overflow-x-auto">
+              <table className="w-full border-collapse text-xs">
+                {children}
+              </table>
+            </div>
+          ),
+          th: ({ children }) => (
+            <th className="border border-border-default bg-bg-elevated px-2 py-1 text-left font-semibold">
+              {children}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td className="border border-border-default px-2 py-1">
+              {children}
+            </td>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
+function formatSpecTimestamp(value: string): string {
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    return date.toLocaleString([], {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return value;
+  }
 }

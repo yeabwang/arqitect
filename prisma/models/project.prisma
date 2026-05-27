@@ -21,6 +21,7 @@ model Project {
 
   collaborators  ProjectCollaborator[]
   invitations    ProjectInvitation[]
+  specs          ProjectSpec[]
 
   @@index([ownerId])
   @@index([createdAt])

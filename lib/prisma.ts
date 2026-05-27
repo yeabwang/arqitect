@@ -14,6 +14,7 @@ const REQUIRED_PRISMA_DELEGATES = [
   "projectCollaborator",
   "projectInvitation",
   "taskRun",
+  "projectSpec",
 ] as const;
 
 export function hasRequiredPrismaDelegates(
