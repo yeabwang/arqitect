@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { tasks } from "@trigger.dev/sdk";
+import { auth as triggerAuth, tasks } from "@trigger.dev/sdk";
 import getPrisma from "@/lib/prisma";
 import {
   getCurrentProjectIdentity,
@@ -71,5 +71,17 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return Response.json({ runId: handle.id }, { status: 202 });
+  const publicToken = await triggerAuth.createPublicToken({
+    scopes: {
+      read: {
+        runs: [handle.id],
+      },
+    },
+    expirationTime: "1h",
+  });
+
+  return Response.json(
+    { runId: handle.id, publicToken },
+    { status: 202 },
+  );
 }

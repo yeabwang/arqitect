@@ -1,19 +1,6 @@
 import type { LiveblocksFlow } from "@liveblocks/react-flow";
 import type { CanvasEdge, CanvasNode } from "@/types/canvas";
-
-export type AiStatusPhase =
-  | "starting"
-  | "thinking"
-  | "applying"
-  | "complete"
-  | "error";
-
-export type AiStatusEvent = {
-  type: "ai:status";
-  runId: string;
-  phase: AiStatusPhase;
-  message: string;
-};
+import type { AiFeedPayload } from "@/types/tasks";
 
 export type AiPresenceEvent = {
   type: "ai:presence";
@@ -22,7 +9,7 @@ export type AiPresenceEvent = {
   thinking: boolean;
 };
 
-export type AiRoomEvent = AiStatusEvent | AiPresenceEvent;
+export type AiRoomEvent = AiPresenceEvent;
 
 declare global {
   interface Liveblocks {
@@ -50,6 +37,8 @@ declare global {
     ThreadMetadata: Record<string, never>;
 
     RoomInfo: Record<string, never>;
+
+    FeedMessageData: AiFeedPayload;
   }
 }
 

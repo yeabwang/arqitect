@@ -1,5 +1,5 @@
 import { logger, task } from "@trigger.dev/sdk";
-import { Liveblocks } from "@liveblocks/node";
+import { Liveblocks, LiveblocksError } from "@liveblocks/node";
 import { mutateFlow } from "@liveblocks/react-flow/node";
 import { createRequesty } from "@requesty/ai-sdk";
 import { generateText, hasToolCall, stepCountIs, tool } from "ai";
@@ -18,7 +18,12 @@ import {
   resolveColor,
   resolveSize,
 } from "@/lib/design-agent/schema";
-import type { AiPresenceEvent, AiStatusEvent } from "@/liveblocks.config";
+import type { AiPresenceEvent } from "@/liveblocks.config";
+import {
+  AI_STATUS_FEED_ID,
+  type AiStatusFeedPayload,
+  type AiStatusPhase,
+} from "@/types/tasks";
 
 export interface DesignAgentPayload {
   prompt: string;
@@ -55,15 +60,45 @@ function getDesignModel() {
   return provider(modelId);
 }
 
-async function broadcastStatus(
+async function ensureStatusFeed(
   client: Liveblocks,
   roomId: string,
-  event: AiStatusEvent,
 ): Promise<void> {
   try {
-    await client.broadcastEvent(roomId, event);
+    await client.createFeed({ roomId, feedId: AI_STATUS_FEED_ID });
   } catch (err) {
-    logger.warn("failed to broadcast ai:status", {
+    // 409 = already exists; anything else gets logged but is non-fatal so a
+    // missed feed init never tanks the agent run.
+    if (err instanceof LiveblocksError && err.status === 409) {
+      return;
+    }
+    logger.warn("failed to ensure ai-status-feed", {
+      error: (err as Error).message,
+    });
+  }
+}
+
+async function publishStatus(
+  client: Liveblocks,
+  roomId: string,
+  runId: string,
+  phase: AiStatusPhase,
+  text: string,
+): Promise<void> {
+  const payload: AiStatusFeedPayload = {
+    kind: "design",
+    phase,
+    runId,
+    text,
+  };
+  try {
+    await client.createFeedMessage({
+      roomId,
+      feedId: AI_STATUS_FEED_ID,
+      data: payload,
+    });
+  } catch (err) {
+    logger.warn("failed to publish ai-status-feed message", {
       error: (err as Error).message,
     });
   }
@@ -405,12 +440,14 @@ export const designAgentTask = task({
       });
     }
 
-    await broadcastStatus(liveblocks, roomId, {
-      type: "ai:status",
+    await ensureStatusFeed(liveblocks, roomId);
+    await publishStatus(
+      liveblocks,
+      roomId,
       runId,
-      phase: "starting",
-      message: "Ghost AI is reading your prompt...",
-    });
+      "starting",
+      "Ghost AI is reading your prompt...",
+    );
     await broadcastPresence(liveblocks, roomId, {
       type: "ai:presence",
       runId,
@@ -429,12 +466,13 @@ export const designAgentTask = task({
     };
 
     try {
-      await broadcastStatus(liveblocks, roomId, {
-        type: "ai:status",
+      await publishStatus(
+        liveblocks,
+        roomId,
         runId,
-        phase: "thinking",
-        message: "Designing the architecture...",
-      });
+        "thinking",
+        "Designing the architecture...",
+      );
 
       const model = getDesignModel();
       const tools = buildToolset(state);
@@ -450,14 +488,15 @@ export const designAgentTask = task({
         onStepFinish: async (step) => {
           if (state.applied !== appliedAtLastStep) {
             appliedAtLastStep = state.applied;
-            await broadcastStatus(liveblocks, roomId, {
-              type: "ai:status",
+            await publishStatus(
+              liveblocks,
+              roomId,
               runId,
-              phase: "applying",
-              message: `Applied ${state.applied} change${
+              "applying",
+              `Applied ${state.applied} change${
                 state.applied === 1 ? "" : "s"
               }...`,
-            });
+            );
           }
           if (step.finishReason === "error") {
             logger.warn("step finished with error", {
@@ -478,15 +517,15 @@ export const designAgentTask = task({
         steps: result.steps.length,
       });
 
-      await broadcastStatus(liveblocks, roomId, {
-        type: "ai:status",
+      await publishStatus(
+        liveblocks,
+        roomId,
         runId,
-        phase: "complete",
-        message:
-          state.skipped > 0
-            ? `${summary} (${state.applied} applied, ${state.skipped} skipped)`
-            : summary,
-      });
+        "complete",
+        state.skipped > 0
+          ? `${summary} (${state.applied} applied, ${state.skipped} skipped)`
+          : summary,
+      );
 
       return {
         summary,
@@ -497,12 +536,13 @@ export const designAgentTask = task({
     } catch (err) {
       const message = (err as Error).message ?? "Generation failed";
       logger.error("design agent failed", { message });
-      await broadcastStatus(liveblocks, roomId, {
-        type: "ai:status",
+      await publishStatus(
+        liveblocks,
+        roomId,
         runId,
-        phase: "error",
-        message: "Ghost AI hit an error while designing the canvas.",
-      });
+        "error",
+        "Ghost AI hit an error while designing the canvas.",
+      );
       throw err;
     } finally {
       await broadcastPresence(liveblocks, roomId, {
