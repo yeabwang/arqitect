@@ -1,4 +1,8 @@
 import { defineConfig } from "@trigger.dev/sdk";
+import { config as loadEnv } from "dotenv";
+
+loadEnv({ path: ".env" });
+loadEnv({ path: ".env.local", override: true });
 
 export default defineConfig({
   project: process.env.TRIGGER_PROJECT_REF ?? "proj_REPLACE_ME",

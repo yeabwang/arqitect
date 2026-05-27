@@ -81,6 +81,6 @@ export async function POST(request: Request) {
       return new Response(error.message, { status: error.status });
     }
 
-    throw error;
+    throw error; 
   }
 }
