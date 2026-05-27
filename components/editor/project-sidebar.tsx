@@ -42,7 +42,7 @@ export function ProjectSidebar({
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/20"
+          className="fixed inset-0 z-30 bg-bg-base/50"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -53,8 +53,8 @@ export function ProjectSidebar({
         aria-hidden={!isOpen}
         inert={!isOpen}
         className={cn(
-          "fixed top-12 left-0 z-40 flex h-[calc(100vh-3rem)] w-72 flex-col border-r border-border bg-card/80 shadow-2xl backdrop-blur-md transition-transform duration-200",
-          isOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
+          "fixed top-20 left-4 z-40 flex h-[calc(100vh-6rem)] w-72 flex-col rounded-2xl border border-border bg-card/90 shadow-2xl backdrop-blur-md transition-transform duration-200",
+          isOpen ? "translate-x-0" : "-translate-x-[calc(100%+2rem)] pointer-events-none"
         )}
       >
         <div className="flex items-center justify-between border-b border-border px-4 py-3">

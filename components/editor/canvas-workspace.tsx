@@ -28,7 +28,6 @@ import {
   ConnectionLineType,
   ConnectionMode,
   MarkerType,
-  MiniMap,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
@@ -42,9 +41,9 @@ import { AiSidebar } from "@/components/editor/ai-sidebar";
 import { CanvasControls } from "@/components/editor/canvas-controls";
 import { CanvasEdge as CanvasEdgeRenderer } from "@/components/editor/canvas-edge";
 import { CanvasNode as CanvasNodeRenderer } from "@/components/editor/canvas-node";
+import { CanvasToolRail } from "@/components/editor/canvas-tool-rail";
 import { PresenceAvatars } from "@/components/editor/presence-avatars";
 import { PresenceCursors } from "@/components/editor/presence-cursors";
-import { ShapePanel } from "@/components/editor/shape-panel";
 import { StarterTemplatesModal } from "@/components/editor/starter-templates-modal";
 import {
   instantiateTemplate,
@@ -107,6 +106,7 @@ interface CanvasWorkspaceProps {
   onTemplatesOpenChange: (open: boolean) => void;
   onSaveStatusChange?: (status: CanvasSaveStatus) => void;
   aiSidebarOpen: boolean;
+  onToggleAiSidebar: () => void;
   onCloseAiSidebar: () => void;
 }
 
@@ -117,6 +117,7 @@ interface CollaborativeCanvasProps {
   onTemplatesOpenChange: (open: boolean) => void;
   onSaveStatusChange?: (status: CanvasSaveStatus) => void;
   aiSidebarOpen: boolean;
+  onToggleAiSidebar: () => void;
   onCloseAiSidebar: () => void;
 }
 
@@ -169,6 +170,7 @@ function CollaborativeCanvas({
   onTemplatesOpenChange,
   onSaveStatusChange,
   aiSidebarOpen,
+  onToggleAiSidebar,
   onCloseAiSidebar,
 }: CollaborativeCanvasProps) {
   const { nodes, edges, onNodesChange, onEdgesChange, onDelete } =
@@ -191,14 +193,20 @@ function CollaborativeCanvas({
     }
     hasAttemptedLoadRef.current = true;
 
+    let cancelled = false;
     const currentNodes = reactFlow.getNodes();
     const currentEdges = reactFlow.getEdges();
     if (currentNodes.length > 0 || currentEdges.length > 0) {
-      setIsCanvasLoaded(true);
-      return;
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setIsCanvasLoaded(true);
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
     }
 
-    let cancelled = false;
     (async () => {
       try {
         const response = await fetch(`/api/projects/${projectId}/canvas`);
@@ -560,19 +568,6 @@ function CollaborativeCanvas({
           size={1}
           color="var(--border-subtle)"
         />
-        {/* Bottom-right minimap, lifted above the runtime Liveblocks watermark
-            so it covers it cleanly; React Flow's own attribution is removed via
-            proOptions.hideAttribution. */}
-        <MiniMap
-          pannable
-          zoomable
-          position="bottom-right"
-          bgColor="var(--bg-surface)"
-          maskColor="var(--bg-base)"
-          nodeColor="var(--accent-primary)"
-          nodeStrokeColor="var(--text-primary)"
-          className="!bottom-6 !right-6 !m-0 z-[1000] overflow-hidden rounded-xl border border-border-default shadow-lg"
-        />
       </ReactFlow>
       <PresenceCursors />
       <AiPresenceLayer />
@@ -583,7 +578,12 @@ function CollaborativeCanvas({
         canUndo={canUndo}
         canRedo={canRedo}
       />
-      <ShapePanel />
+      <CanvasToolRail
+        projectId={projectId}
+        isAiOpen={aiSidebarOpen}
+        onToggleAi={onToggleAiSidebar}
+        onOpenTemplates={() => onTemplatesOpenChange(true)}
+      />
       <StarterTemplatesModal
         open={templatesOpen}
         onClose={() => onTemplatesOpenChange(false)}
@@ -606,6 +606,7 @@ export function CanvasWorkspace({
   onTemplatesOpenChange,
   onSaveStatusChange,
   aiSidebarOpen,
+  onToggleAiSidebar,
   onCloseAiSidebar,
 }: CanvasWorkspaceProps) {
   return (
@@ -625,6 +626,7 @@ export function CanvasWorkspace({
                   onTemplatesOpenChange={onTemplatesOpenChange}
                   onSaveStatusChange={onSaveStatusChange}
                   aiSidebarOpen={aiSidebarOpen}
+                  onToggleAiSidebar={onToggleAiSidebar}
                   onCloseAiSidebar={onCloseAiSidebar}
                 />
               </ReactFlowProvider>

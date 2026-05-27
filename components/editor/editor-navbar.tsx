@@ -4,9 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
   PanelLeftOpen,
   PanelLeftClose,
-  PanelRightOpen,
-  PanelRightClose,
-  LayoutTemplate,
   Share2,
   Check,
   CircleAlert,
@@ -20,10 +17,7 @@ interface EditorNavbarProps {
   isSidebarOpen: boolean;
   onToggleSidebar: () => void;
   projectName?: string;
-  onOpenStarterTemplates?: () => void;
   onShareProject?: () => void;
-  isAiSidebarOpen?: boolean;
-  onToggleAiSidebar?: () => void;
   hideUserButton?: boolean;
   saveStatus?: CanvasSaveStatus;
 }
@@ -61,23 +55,21 @@ export function EditorNavbar({
   isSidebarOpen,
   onToggleSidebar,
   projectName,
-  onOpenStarterTemplates,
   onShareProject,
-  isAiSidebarOpen = false,
-  onToggleAiSidebar,
   hideUserButton = false,
   saveStatus,
 }: EditorNavbarProps) {
   const saveDisplay = saveStatus ? SAVE_STATUS_DISPLAY[saveStatus] : null;
   const SaveIcon = saveDisplay?.icon;
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40 flex h-12 items-center border-b border-border bg-background">
-      <div className="flex items-center px-2">
+    <nav className="pointer-events-none fixed left-4 right-4 top-4 z-40 flex items-start justify-between gap-4">
+      <div className="pointer-events-auto flex min-w-0 items-center gap-2 rounded-2xl border border-border-default bg-bg-elevated/90 p-1.5 shadow-2xl backdrop-blur-md">
         <Button
           variant="ghost"
           size="icon-sm"
           onClick={onToggleSidebar}
-          aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
+          aria-label={isSidebarOpen ? "Close projects" : "Open projects"}
+          title={isSidebarOpen ? "Close projects" : "Open projects"}
         >
           {isSidebarOpen ? (
             <PanelLeftClose className="h-4 w-4" />
@@ -85,70 +77,56 @@ export function EditorNavbar({
             <PanelLeftOpen className="h-4 w-4" />
           )}
         </Button>
-      </div>
 
-      <div className="flex min-w-0 flex-1 items-center justify-center px-3">
-        {projectName ? (
-          <h1 className="truncate text-sm font-medium text-foreground">
-            {projectName}
-          </h1>
-        ) : null}
-      </div>
+        <div className="h-5 w-px bg-border-default" />
 
-      <div className="flex items-center gap-2 px-2">
+        <div className="min-w-0 px-1.5">
+          <p className="text-[10px] font-medium tracking-wide text-text-faint uppercase">
+            Ghost AI
+          </p>
+          {projectName ? (
+            <h1 className="max-w-[44vw] truncate text-sm font-semibold text-text-primary md:max-w-[360px]">
+              {projectName}
+            </h1>
+          ) : null}
+        </div>
+
         {saveDisplay && SaveIcon ? (
-          <div
-            className={`flex h-8 items-center gap-1.5 rounded-md px-2 text-xs ${saveDisplay.className}`}
-            aria-live="polite"
-            aria-label={`Canvas ${saveDisplay.label}`}
-          >
-            <SaveIcon
-              className={`h-3.5 w-3.5 ${
-                saveStatus === "saving" ? "animate-spin" : ""
-              }`}
-            />
-            <span>{saveDisplay.label}</span>
-          </div>
+          <>
+            <div className="h-5 w-px bg-border-default" />
+            <div
+              className={`flex h-8 items-center gap-1.5 rounded-xl px-2 text-xs ${saveDisplay.className}`}
+              aria-live="polite"
+              aria-label={`Canvas ${saveDisplay.label}`}
+            >
+              <SaveIcon
+                className={`h-3.5 w-3.5 ${
+                  saveStatus === "saving" ? "animate-spin" : ""
+                }`}
+              />
+              <span className="hidden sm:inline">{saveDisplay.label}</span>
+            </div>
+          </>
         ) : null}
-        {onOpenStarterTemplates ? (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={onOpenStarterTemplates}
-            aria-label="Start from a template"
-          >
-            <LayoutTemplate className="h-4 w-4" />
-          </Button>
-        ) : null}
+      </div>
+
+      <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-border-default bg-bg-elevated/90 p-1.5 shadow-2xl backdrop-blur-md">
         {onShareProject ? (
           <Button
-            variant="ghost"
-            size="icon-sm"
+            variant="default"
+            size="sm"
             onClick={onShareProject}
             aria-label="Share project"
           >
             <Share2 className="h-4 w-4" />
-          </Button>
-        ) : null}
-        {onToggleAiSidebar ? (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={onToggleAiSidebar}
-            aria-label={isAiSidebarOpen ? "Close AI sidebar" : "Open AI sidebar"}
-          >
-            {isAiSidebarOpen ? (
-              <PanelRightClose className="h-4 w-4" />
-            ) : (
-              <PanelRightOpen className="h-4 w-4" />
-            )}
+            <span className="hidden sm:inline">Share</span>
           </Button>
         ) : null}
         {hideUserButton ? null : (
           <UserButton
             appearance={{
               elements: {
-                avatarBox: "h-7 w-7",
+                avatarBox: "h-8 w-8",
               },
             }}
           />

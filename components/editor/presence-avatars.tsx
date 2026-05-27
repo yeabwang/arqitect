@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useUser, UserButton } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import { useOthers } from "@liveblocks/react/suspense";
 import { shallow } from "@liveblocks/react";
 import { cn } from "@/lib/utils";
@@ -67,7 +67,7 @@ export function PresenceAvatars() {
         id: other.id ?? "",
         name: other.info?.name ?? "Collaborator",
         avatarUrl: other.info?.avatarUrl ?? "",
-        color: other.info?.color ?? "#475569",
+        color: other.info?.color ?? "var(--text-faint)",
       })),
     shallow
   );
@@ -81,47 +81,37 @@ export function PresenceAvatars() {
   const overflow = collaborators.length - visible.length;
   const hasCollaborators = collaborators.length > 0;
 
+  if (!hasCollaborators) {
+    return null;
+  }
+
   return (
     <div
-      className="pointer-events-auto absolute top-3 right-3 z-30 flex items-center gap-2 rounded-full border border-border bg-card/80 px-2 py-1 shadow-md backdrop-blur-md"
+      className="pointer-events-auto absolute top-20 right-4 z-20 flex items-center rounded-full border border-border bg-card/80 px-2 py-1 shadow-md backdrop-blur-md"
       aria-label="Room participants"
     >
-      {hasCollaborators ? (
-        <div className="flex items-center -space-x-2">
-          {visible.map((other) => (
-            <CollaboratorAvatar
-              key={other.connectionId}
-              name={other.name}
-              avatarUrl={other.avatarUrl}
-              color={other.color}
-            />
-          ))}
-          {overflow > 0 ? (
-            <div
-              className={cn(
-                "inline-flex items-center justify-center rounded-full bg-bg-elevated text-[10px] font-semibold text-foreground ring-2 ring-background",
-                AVATAR_SIZE_CLASS
-              )}
-              title={`${overflow} more`}
-              aria-label={`${overflow} more collaborators`}
-            >
-              +{overflow}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      {hasCollaborators ? (
-        <span aria-hidden className="h-5 w-px bg-border" />
-      ) : null}
-
-      <UserButton
-        appearance={{
-          elements: {
-            avatarBox: AVATAR_SIZE_CLASS,
-          },
-        }}
-      />
+      <div className="flex items-center -space-x-2">
+        {visible.map((other) => (
+          <CollaboratorAvatar
+            key={other.connectionId}
+            name={other.name}
+            avatarUrl={other.avatarUrl}
+            color={other.color}
+          />
+        ))}
+        {overflow > 0 ? (
+          <div
+            className={cn(
+              "inline-flex items-center justify-center rounded-full bg-bg-elevated text-[10px] font-semibold text-foreground ring-2 ring-background",
+              AVATAR_SIZE_CLASS
+            )}
+            title={`${overflow} more`}
+            aria-label={`${overflow} more collaborators`}
+          >
+            +{overflow}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

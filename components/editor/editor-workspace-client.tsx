@@ -46,11 +46,7 @@ export function EditorWorkspaceClient({
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen((open) => !open)}
         projectName={projectName}
-        onOpenStarterTemplates={() => setIsTemplatesOpen(true)}
         onShareProject={() => setIsShareDialogOpen(true)}
-        isAiSidebarOpen={isAiSidebarOpen}
-        onToggleAiSidebar={() => setIsAiSidebarOpen((open) => !open)}
-        hideUserButton
         saveStatus={saveStatus}
       />
       <ProjectSidebar
@@ -69,8 +65,8 @@ export function EditorWorkspaceClient({
         onDenyInvitation={dialogs.handleDenyInvitation}
       />
 
-      <main className="pt-12">
-        <div className="relative h-[calc(100vh-3rem)] overflow-hidden bg-background">
+      <main className="h-screen">
+        <div className="relative h-full overflow-hidden bg-background">
           {/* Canvas fills the full area; sidebars float above it so the dotted
               background stays visible edge to edge underneath them. */}
           <div className="absolute inset-0">
@@ -81,6 +77,7 @@ export function EditorWorkspaceClient({
               onTemplatesOpenChange={setIsTemplatesOpen}
               onSaveStatusChange={setSaveStatus}
               aiSidebarOpen={isAiSidebarOpen}
+              onToggleAiSidebar={() => setIsAiSidebarOpen((open) => !open)}
               onCloseAiSidebar={() => setIsAiSidebarOpen(false)}
             />
           </div>
