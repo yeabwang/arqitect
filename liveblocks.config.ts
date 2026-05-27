@@ -1,5 +1,15 @@
 import type { LiveblocksFlow } from "@liveblocks/react-flow";
 import type { CanvasEdge, CanvasNode } from "@/types/canvas";
+import type { AiFeedPayload } from "@/types/tasks";
+
+export type AiPresenceEvent = {
+  type: "ai:presence";
+  runId: string;
+  cursor: { x: number; y: number } | null;
+  thinking: boolean;
+};
+
+export type AiRoomEvent = AiPresenceEvent;
 
 declare global {
   interface Liveblocks {
@@ -22,11 +32,13 @@ declare global {
       };
     };
 
-    RoomEvent: never;
+    RoomEvent: AiRoomEvent;
 
     ThreadMetadata: Record<string, never>;
 
     RoomInfo: Record<string, never>;
+
+    FeedMessageData: AiFeedPayload;
   }
 }
 

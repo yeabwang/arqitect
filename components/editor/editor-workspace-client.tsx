@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AiSidebar } from "@/components/editor/ai-sidebar";
 import { CanvasWorkspace } from "@/components/editor/canvas-workspace";
 import { EditorNavbar } from "@/components/editor/editor-navbar";
 import { ProjectSidebar } from "@/components/editor/project-sidebar";
@@ -81,13 +80,10 @@ export function EditorWorkspaceClient({
               templatesOpen={isTemplatesOpen}
               onTemplatesOpenChange={setIsTemplatesOpen}
               onSaveStatusChange={setSaveStatus}
+              aiSidebarOpen={isAiSidebarOpen}
+              onCloseAiSidebar={() => setIsAiSidebarOpen(false)}
             />
           </div>
-
-          <AiSidebar
-            isOpen={isAiSidebarOpen}
-            onClose={() => setIsAiSidebarOpen(false)}
-          />
         </div>
       </main>
 
