@@ -1,19 +1,20 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/ui/themes";
 
-const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
-const geistMono = Geist_Mono({
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const jetBrainsMono = JetBrains_Mono({
   subsets: ["latin"],
-  variable: "--font-geist-mono",
+  variable: "--font-jetbrains-mono",
 });
 
 export const metadata: Metadata = {
   title: "Arqitect",
-  description: "For real developers only.",
+  description:
+    "Design production-ready software systems with an AI architect on an editable canvas.",
 };
 
 export default function RootLayout({
@@ -39,7 +40,7 @@ export default function RootLayout({
           colorNeutral: "var(--text-muted)",
           colorBorder: "var(--border-default)",
           borderRadius: "var(--radius)",
-          fontFamily: "var(--font-geist-sans)",
+          fontFamily: "var(--font-inter)",
         },
       }}
     >
@@ -47,8 +48,8 @@ export default function RootLayout({
         lang="en"
         className={cn(
           "h-full antialiased font-sans",
-          geistSans.variable,
-          geistMono.variable
+          inter.variable,
+          jetBrainsMono.variable
         )}
       >
         <body className="min-h-full">{children}</body>

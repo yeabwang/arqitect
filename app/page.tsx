@@ -1,12 +1,5 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+import { LandingPage } from "@/components/landing/landing-page";
 
-export default async function Home() {
-  const { userId } = await auth();
-
-  if (userId) {
-    redirect("/editor");
-  }
-
-  redirect("/sign-in");
+export default function Home() {
+  return <LandingPage />;
 }
