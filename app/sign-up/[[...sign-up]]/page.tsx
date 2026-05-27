@@ -10,9 +10,9 @@ export default function SignUpPage() {
       <div className="hidden flex-1 flex-col justify-between bg-bg-surface px-14 py-10 lg:flex">
         <div className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-primary">
-            <span className="text-[11px] font-bold text-bg-base">G</span>
+            <span className="text-[11px] font-bold text-bg-base">A</span>
           </div>
-          <span className="text-sm font-medium text-text-primary">Ghost AI</span>
+          <span className="text-sm font-medium text-text-primary">Arqitect</span>
         </div>
 
         <div className="max-w-md">
@@ -22,7 +22,7 @@ export default function SignUpPage() {
             speed of thought.
           </h1>
           <p className="mt-4 text-sm leading-relaxed text-text-secondary">
-            Describe your architecture in plain English. Ghost AI maps it to a
+            Describe your architecture in plain English. Arqitect maps it to a
             shared canvas your whole team can refine in real time.
           </p>
 
@@ -64,7 +64,7 @@ export default function SignUpPage() {
         </div>
 
         <p className="text-xs text-text-faint">
-          © {new Date().getFullYear()} Ghost AI. All rights reserved.
+          © {new Date().getFullYear()} Arqitect. All rights reserved.
         </p>
       </div>
 

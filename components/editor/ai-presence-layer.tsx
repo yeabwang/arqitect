@@ -5,7 +5,7 @@ import { useEventListener } from "@liveblocks/react/suspense";
 import { useViewport } from "@xyflow/react";
 import { Bot } from "lucide-react";
 
-const AI_NAME = "Ghost AI";
+const AI_NAME = "Arqitect";
 const AI_COLOR = "#8b82ff";
 const PRESENCE_TIMEOUT_MS = 8_000;
 

@@ -140,7 +140,7 @@ export function CanvasToolRail({
         className="pointer-events-auto flex flex-col items-center gap-1 rounded-2xl border border-border-default bg-bg-elevated/90 p-1.5 shadow-2xl backdrop-blur-md"
       >
         <RailButton
-          label={isAiOpen ? "Close Ghost AI" : "Open Ghost AI"}
+          label={isAiOpen ? "Close Arqitect" : "Open Arqitect"}
           active={isAiOpen}
           onClick={onToggleAi}
           icon={

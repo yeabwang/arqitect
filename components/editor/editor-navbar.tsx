@@ -82,7 +82,7 @@ export function EditorNavbar({
 
         <div className="min-w-0 px-1.5">
           <p className="text-[10px] font-medium tracking-wide text-text-faint uppercase">
-            Ghost AI
+            Arqitect
           </p>
           {projectName ? (
             <h1 className="max-w-[44vw] truncate text-sm font-semibold text-text-primary md:max-w-[360px]">

@@ -54,7 +54,7 @@ export interface CanvasNodeData extends Record<string, unknown> {
 }
 
 // Drag-and-drop contract between the shape panel and the canvas drop target.
-export const SHAPE_DRAG_MIME = "application/ghost-shape" as const;
+export const SHAPE_DRAG_MIME = "application/arqitect-shape" as const;
 
 export interface ShapeDragPayload {
   shape: CanvasNodeShape;

@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ghost AI",
+  title: "Arqitect",
   description: "For real developers only.",
 };
 

@@ -57,7 +57,7 @@ export function PresenceCursors() {
               {other.thinking ? (
                 <Loader2
                   className="h-3 w-3 animate-spin"
-                  aria-label="Working with Ghost AI"
+                  aria-label="Working with Arqitect"
                 />
               ) : null}
               {other.name}

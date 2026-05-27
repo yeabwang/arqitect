@@ -446,7 +446,7 @@ export const designAgentTask = task({
       roomId,
       runId,
       "starting",
-      "Ghost AI is reading your prompt...",
+      "Arqitect is reading your prompt...",
     );
     await broadcastPresence(liveblocks, roomId, {
       type: "ai:presence",
@@ -541,7 +541,7 @@ export const designAgentTask = task({
         roomId,
         runId,
         "error",
-        "Ghost AI hit an error while designing the canvas.",
+        "Arqitect hit an error while designing the canvas.",
       );
       throw err;
     } finally {

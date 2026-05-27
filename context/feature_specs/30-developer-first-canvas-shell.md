@@ -3,12 +3,12 @@ Redesign the editor workspace into a developer-first canvas shell inspired by mo
 ## Implementation
 
 1. Replace the full-width editor navbar with floating top controls.
-   - Top-left: project drawer toggle, Ghost AI label, current project name, save status.
+   - Top-left: project drawer toggle, Arqitect label, current project name, save status.
    - Top-right: Share action and Clerk user profile.
    - Keep all controls above the canvas as overlays so the graph remains full viewport.
 
 2. Add a left floating canvas tool rail.
-   - Working tools: Ghost AI toggle, select pointer, starter templates, shape insertion.
+   - Working tools: Arqitect toggle, select pointer, starter templates, shape insertion.
    - Shapes should expose the existing six draggable canvas shapes in a flyout.
    - Planned tools: text, frames, comments, and more tools.
    - Planned tools route to a project-scoped coming-soon page.

@@ -176,7 +176,7 @@ export function AiSidebar({
             <h2 className="text-sm font-semibold text-text-primary">
               AI Workspace
             </h2>
-            <p className="text-xs text-text-muted">Collaborate with Ghost AI</p>
+            <p className="text-xs text-text-muted">Collaborate with Arqitect</p>
           </div>
         </div>
         <Button
@@ -366,7 +366,7 @@ function ArchitectTab({ projectId, roomId }: ArchitectTabProps) {
         if (!response.ok) {
           const text = await response.text();
           await pushAssistantMessage(
-            text || "Failed to start Ghost AI. Please try again.",
+            text || "Failed to start Arqitect. Please try again.",
             "no-run",
             true,
           );
@@ -385,14 +385,14 @@ function ArchitectTab({ projectId, roomId }: ArchitectTabProps) {
           setActiveRun({ runId: data.runId, publicToken: data.publicToken });
         } else {
           await pushAssistantMessage(
-            "Ghost AI did not return a run handle.",
+            "Arqitect did not return a run handle.",
             "no-run",
             true,
           );
         }
       } catch {
         await pushAssistantMessage(
-          "Network error reaching Ghost AI. Please try again.",
+          "Network error reaching Arqitect. Please try again.",
           "no-run",
           true,
         );
@@ -508,8 +508,8 @@ function ArchitectTab({ projectId, roomId }: ArchitectTabProps) {
             onKeyDown={handleTextareaKeyDown}
             placeholder={
               isRunActive
-                ? "Ghost AI is working on your last request..."
-                : "Ask Ghost AI to design something..."
+                ? "Arqitect is working on your last request..."
+                : "Ask Arqitect to design something..."
             }
             className="min-h-[72px] max-h-[160px] resize-none bg-bg-elevated text-sm text-text-primary placeholder:text-text-muted"
             disabled={inputsDisabled}
@@ -519,7 +519,7 @@ function ArchitectTab({ projectId, roomId }: ArchitectTabProps) {
             size="icon"
             onClick={handleSend}
             disabled={draft.trim().length === 0 || inputsDisabled}
-            aria-label={inputsDisabled ? "Ghost AI is busy" : "Send message"}
+            aria-label={inputsDisabled ? "Arqitect is busy" : "Send message"}
             className="text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40"
             style={{ backgroundColor: SUBMIT_BUTTON_BG }}
           >
@@ -574,7 +574,7 @@ function RunTracker({
       settledRef.current = true;
       void onFailed(
         runId,
-        error.message || "Lost connection to Ghost AI. Please try again.",
+        error.message || "Lost connection to Arqitect. Please try again.",
       );
       return;
     }
@@ -587,7 +587,7 @@ function RunTracker({
         (run.output && typeof run.output.summary === "string"
           ? run.output.summary.trim()
           : "") ||
-        `Ghost AI applied ${run.output?.applied ?? 0} change${
+        `Arqitect applied ${run.output?.applied ?? 0} change${
           (run.output?.applied ?? 0) === 1 ? "" : "s"
         }.`;
       void onCompleted(runId, summary);
@@ -597,7 +597,7 @@ function RunTracker({
       settledRef.current = true;
       void onFailed(
         runId,
-        run.error?.message || "Ghost AI hit an error while designing.",
+        run.error?.message || "Arqitect hit an error while designing.",
       );
     }
   }, [error, onCompleted, onFailed, run, runId]);
@@ -704,10 +704,10 @@ function ArchitectEmptyState({
       </div>
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium text-text-primary">
-          Start designing with Ghost AI
+          Start designing with Arqitect
         </p>
         <p className="max-w-64 text-xs text-text-muted">
-          Describe what you want to build and Ghost AI will sketch an
+          Describe what you want to build and Arqitect will sketch an
           architecture on the canvas.
         </p>
       </div>
@@ -731,15 +731,15 @@ function ArchitectEmptyState({
 function defaultStatusText(payload: AiStatusFeedPayload): string {
   switch (payload.phase) {
     case "starting":
-      return "Ghost AI is starting...";
+      return "Arqitect is starting...";
     case "thinking":
-      return "Ghost AI is thinking...";
+      return "Arqitect is thinking...";
     case "applying":
-      return "Ghost AI is applying changes...";
+      return "Arqitect is applying changes...";
     case "complete":
-      return "Ghost AI finished.";
+      return "Arqitect finished.";
     case "error":
-      return "Ghost AI hit an error.";
+      return "Arqitect hit an error.";
   }
 }
 
@@ -1315,7 +1315,7 @@ function SpecsTab({ projectId, roomId }: SpecsTabProps) {
 function defaultSpecStatusText(phase: AiStatusFeedPayload["phase"]): string {
   switch (phase) {
     case "starting":
-      return "Ghost AI is reading your canvas...";
+      return "Arqitect is reading your canvas...";
     case "thinking":
       return "Drafting technical specification...";
     case "applying":
@@ -1323,7 +1323,7 @@ function defaultSpecStatusText(phase: AiStatusFeedPayload["phase"]): string {
     case "complete":
       return "Specification ready.";
     case "error":
-      return "Ghost AI hit an error.";
+      return "Arqitect hit an error.";
   }
 }
 

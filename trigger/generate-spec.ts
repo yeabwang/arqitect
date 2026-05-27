@@ -49,7 +49,7 @@ export const generateSpecInputSchema = z.object({
 
 export type GenerateSpecInput = z.infer<typeof generateSpecInputSchema>;
 
-const SPEC_SYSTEM_PROMPT = `You are Ghost AI, a senior software architect. Generate a clean, well-structured Markdown technical specification from the provided system-design canvas (nodes and edges) and any chat context.
+const SPEC_SYSTEM_PROMPT = `You are Arqitect, a senior software architect. Generate a clean, well-structured Markdown technical specification from the provided system-design canvas (nodes and edges) and any chat context.
 
 Requirements:
 - Output ONLY GitHub-flavored Markdown. No code fences around the whole document. No preamble or trailing commentary.
@@ -215,7 +215,7 @@ export const generateSpecTask = task({
       payload.roomId,
       runId,
       "starting",
-      "Ghost AI is reading your canvas...",
+      "Arqitect is reading your canvas...",
     );
 
     try {
@@ -294,7 +294,7 @@ export const generateSpecTask = task({
         payload.roomId,
         runId,
         "error",
-        "Ghost AI hit an error while drafting the spec.",
+        "Arqitect hit an error while drafting the spec.",
       );
       throw err;
     }

@@ -44,8 +44,8 @@ export function isActiveAiStatusPhase(phase: AiStatusPhase): boolean {
 export const AI_CHAT_ROLES = ["user", "assistant"] as const;
 export type AiChatRole = (typeof AI_CHAT_ROLES)[number];
 
-export const AI_ASSISTANT_SENDER_ID = "ghost-ai";
-export const AI_ASSISTANT_SENDER_NAME = "Ghost AI";
+export const AI_ASSISTANT_SENDER_ID = "arqitect";
+export const AI_ASSISTANT_SENDER_NAME = "Arqitect";
 
 export const aiChatMessagePayloadSchema = z.object({
   kind: z.literal("chat"),
