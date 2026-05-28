@@ -4,6 +4,8 @@
 
 Build this project incrementally using a spec-driven workflow. Context files define what to build, how to build it, and what the current state of progress is. Always implement against these specs — do not infer or invent behavior from scratch.
 
+Agents must also follow the file naming, product language, and design token rules in `context/code-standards.md` and `context/ui-context.md`. These are implementation requirements, not polish preferences.
+
 ## Scoping Rules
 
 - Work on one feature unit or subsystem at a time.
@@ -26,6 +28,16 @@ If a change cannot be verified end to end quickly, the scope is too broad — sp
 - Do not invent product behavior that is not defined in the context files.
 - If a requirement is ambiguous, resolve it in the relevant context file before implementing.
 - If a requirement is missing, add it as an open question in `progress-tracker.md` before continuing.
+
+## Naming, Copy, and Design System Checks
+
+Before finishing a feature unit:
+
+1. Confirm new files follow the naming rules in `context/code-standards.md`.
+2. Confirm headlines, buttons, empty states, and AI-facing copy follow the product language rules in `context/ui-context.md`.
+3. Confirm colors, shadows, borders, state accents, and recurring visual values come from centralized tokens in `app/globals.css`.
+4. If a component needed a new reusable visual value, add the token centrally and document the intent in `context/ui-context.md` when it changes the design system.
+5. Do not leave manual hex, RGB/HSL color literals, raw `zinc-*` style palette classes, or repeated arbitrary visual styling in feature components.
 
 ## Protected Foundation Components
 
