@@ -4,13 +4,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Phase
 
-- 38-scroll-driven-hero-transformation complete.
+- 31-redesigning_login_signup complete.
 
 ## Current Goal
 
 - Landing page simplified after review: "graph" replaced with "canvas/system/design", security section dropped, beta/appointment gating removed, copy shortened to "show, don't tell" sized blurbs with per-step inline drawings.
 
 ## Completed
+
+- 31-redesigning_login_signup: Sign-in/sign-up pages redesigned to match the supplied reference (centered card on full-black background, mono headings/labels, hairline borders, white CTA). Scope narrowed to individuals only — Individual/Institution chooser dropped per spec. `components/auth/auth-shell.tsx` adds a shared shell with a top header (ARQITECT mono wordmark linking to `/`, `← Back to home` mono-caps link) and a centered 560px max-width content slot. `app/sign-in/[[...sign-in]]/page.tsx` and `app/sign-up/[[...sign-up]]/page.tsx` rewritten — old two-panel feature list removed — each renders the Clerk `<SignIn>` / `<SignUp>` component with a custom `appearance.elements` map: surface card (`bg-bg-surface` + `border-border-default` + `rounded-2xl`), mono headerTitle (`font-mono text-[28px]`), mono uppercase `formFieldLabel` (`text-[11px] tracking-[0.18em] text-text-muted`), `bg-bg-elevated` social/input fields with hairline borders, mono divider text, and a white `formButtonPrimary` (`bg-text-primary text-bg-base font-mono uppercase tracking-[0.18em]`). Clerk's built-in footer hidden via `footer/footerAction: "hidden"` — replaced with project-styled footer links: sign-in shows `New here? Create an account`; sign-up shows `Already have an account? Sign in` plus the Terms/Privacy disclosure. All colors flow through CSS variables (no hex), satisfying the auth spec's "no hardcoded colors" rule. `npm run build` and `npx tsc --noEmit` pass clean.
 
 - 01-design-system: shadcn/ui installed with Button, Card, Dialog, Input, Tabs, Textarea, ScrollArea. `lib/utils.ts` with `cn()` helper. `globals.css` wired with dark-only theme tokens from `ui-context.md`. Build passes clean.
 - 02-editor: `components/editor/editor-navbar.tsx` — fixed top navbar with sidebar toggle, left/center/right sections, PanelLeftOpen/Close icons. `components/editor/project-sidebar.tsx` — floating overlay sidebar with Tabs (My Projects/Shared), empty placeholders, New Project button. Dialog pattern confirmed ready via existing `components/ui/dialog.tsx` (title, description, footer actions using color tokens). TypeScript, ESLint, and Next.js build all pass clean.
