@@ -108,6 +108,7 @@ interface CanvasWorkspaceProps {
   aiSidebarOpen: boolean;
   onToggleAiSidebar: () => void;
   onCloseAiSidebar: () => void;
+  aiInitialPrompt?: string;
 }
 
 interface CollaborativeCanvasProps {
@@ -119,6 +120,7 @@ interface CollaborativeCanvasProps {
   aiSidebarOpen: boolean;
   onToggleAiSidebar: () => void;
   onCloseAiSidebar: () => void;
+  aiInitialPrompt?: string;
 }
 
 interface CanvasErrorBoundaryState {
@@ -172,6 +174,7 @@ function CollaborativeCanvas({
   aiSidebarOpen,
   onToggleAiSidebar,
   onCloseAiSidebar,
+  aiInitialPrompt,
 }: CollaborativeCanvasProps) {
   const { nodes, edges, onNodesChange, onEdgesChange, onDelete } =
     useLiveblocksFlow<CanvasNode, CanvasEdge>({
@@ -594,6 +597,7 @@ function CollaborativeCanvas({
         onClose={onCloseAiSidebar}
         projectId={projectId}
         roomId={roomId}
+        initialPrompt={aiInitialPrompt}
       />
     </div>
   );
@@ -608,6 +612,7 @@ export function CanvasWorkspace({
   aiSidebarOpen,
   onToggleAiSidebar,
   onCloseAiSidebar,
+  aiInitialPrompt,
 }: CanvasWorkspaceProps) {
   return (
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
@@ -628,6 +633,7 @@ export function CanvasWorkspace({
                   aiSidebarOpen={aiSidebarOpen}
                   onToggleAiSidebar={onToggleAiSidebar}
                   onCloseAiSidebar={onCloseAiSidebar}
+                  aiInitialPrompt={aiInitialPrompt}
                 />
               </ReactFlowProvider>
             )}

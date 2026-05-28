@@ -63,6 +63,7 @@ interface AiSidebarProps {
   onClose: () => void;
   projectId: string;
   roomId: string;
+  initialPrompt?: string;
 }
 
 const STARTER_PROMPTS = [
@@ -155,6 +156,7 @@ export function AiSidebar({
   onClose,
   projectId,
   roomId,
+  initialPrompt,
 }: AiSidebarProps) {
   const [tab, setTab] = useState<"architect" | "chat" | "specs">("architect");
 
@@ -221,7 +223,11 @@ export function AiSidebar({
           value="architect"
           className="flex min-h-0 flex-1 flex-col gap-0"
         >
-          <ArchitectTab projectId={projectId} roomId={roomId} />
+          <ArchitectTab
+            projectId={projectId}
+            roomId={roomId}
+            initialPrompt={initialPrompt}
+          />
         </TabsContent>
 
         <TabsContent
@@ -245,9 +251,10 @@ export function AiSidebar({
 interface ArchitectTabProps {
   projectId: string;
   roomId: string;
+  initialPrompt?: string;
 }
 
-function ArchitectTab({ projectId, roomId }: ArchitectTabProps) {
+function ArchitectTab({ projectId, roomId, initialPrompt }: ArchitectTabProps) {
   const { user } = useUser();
   const createFeed = useCreateFeed();
   const createFeedMessage = useCreateFeedMessage();
@@ -255,7 +262,7 @@ function ArchitectTab({ projectId, roomId }: ArchitectTabProps) {
   const latestStatus = useLatestAiStatus();
   const updateMyPresence = useUpdateMyPresence();
 
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(initialPrompt ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeRun, setActiveRun] = useState<ActiveRun | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);

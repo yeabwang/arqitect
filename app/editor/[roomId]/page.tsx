@@ -8,13 +8,37 @@ import { fetchUserInvitations } from "@/lib/project-invitations";
 import { AccessDenied } from "@/components/editor/access-denied";
 import { EditorWorkspaceClient } from "@/components/editor/editor-workspace-client";
 import type { Project } from "@/hooks/use-project-dialogs";
+import type { EditorStartMode } from "@/components/editor/editor-start-state";
 
 interface EditorWorkspacePageProps {
   params: Promise<{ roomId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+const MAX_INITIAL_PROMPT_LENGTH = 500;
+
+function parseStartParams(query: { [key: string]: string | string[] | undefined }): {
+  mode: EditorStartMode;
+  prompt: string;
+} {
+  const rawStart = Array.isArray(query.start) ? query.start[0] : query.start;
+  const rawPrompt = Array.isArray(query.prompt) ? query.prompt[0] : query.prompt;
+
+  let mode: EditorStartMode = "none";
+  if (rawStart === "template") mode = "template";
+  else if (rawStart === "ai") mode = "ai";
+
+  const prompt =
+    typeof rawPrompt === "string"
+      ? rawPrompt.slice(0, MAX_INITIAL_PROMPT_LENGTH)
+      : "";
+
+  return { mode, prompt };
 }
 
 export default async function EditorWorkspacePage({
   params,
+  searchParams,
 }: EditorWorkspacePageProps) {
   const identity = await getCurrentProjectIdentity();
 
@@ -23,6 +47,10 @@ export default async function EditorWorkspacePage({
   }
 
   const { roomId } = await params;
+  const query = await searchParams;
+  const { mode: initialStartMode, prompt: initialStartPrompt } =
+    parseStartParams(query);
+
   const currentProject = await getProjectWithAccess(roomId, identity);
 
   if (!currentProject) {
@@ -59,6 +87,8 @@ export default async function EditorWorkspacePage({
       }}
       initialProjects={initialProjects}
       initialInvitations={initialInvitations}
+      initialStartMode={initialStartMode}
+      initialStartPrompt={initialStartPrompt}
     />
   );
 }
