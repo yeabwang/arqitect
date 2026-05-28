@@ -7,7 +7,7 @@ const clerkAppearance = {
     rootBox: "w-full!",
     cardBox: "w-full! shadow-none!",
     card:
-      "w-full! bg-bg-surface! border! border-border-default! rounded-2xl! p-8! sm:p-10! shadow-2xl! shadow-black/40!",
+      "w-full! bg-bg-surface! border! border-border-default! rounded-2xl! p-8! sm:p-10! shadow-[0_25px_50px_-12px_var(--shadow-overlay-40)]!",
 
     header: "mb-6! text-center! items-center!",
     headerTitle:
@@ -17,7 +17,7 @@ const clerkAppearance = {
     main: "gap-5!",
 
     socialButtonsBlockButton:
-      "h-9! py-0! px-4! rounded-md! bg-transparent! border! border-border-subtle! text-[13px]! font-medium! text-text-primary! hover:bg-bg-surface! hover:border-[#3A3A3A]! transition-colors! shadow-none! normal-case!",
+      "h-9! py-0! px-4! rounded-md! bg-transparent! border! border-border-subtle! text-[13px]! font-medium! text-text-primary! hover:bg-bg-surface! hover:border-border-hover! transition-colors! shadow-none! normal-case!",
     socialButtonsBlockButtonText: "font-sans! text-[13px]! font-medium!",
     socialButtonsProviderIcon: "h-4! w-4!",
 
@@ -30,15 +30,15 @@ const clerkAppearance = {
     formFieldLabel:
       "font-mono! text-[11px]! tracking-[0.02em]! text-text-muted! mb-1.5! normal-case!",
     formFieldInput:
-      "h-9! py-0! px-3! text-[13px]! rounded-md! bg-bg-base! border! border-border-subtle! text-text-primary! placeholder:text-text-faint! focus:border-[#3A3A3A]! focus:ring-0! focus:outline-none! shadow-none!",
+      "h-9! py-0! px-3! text-[13px]! rounded-md! bg-bg-base! border! border-border-subtle! text-text-primary! placeholder:text-text-faint! focus:border-border-hover! focus:ring-0! focus:outline-none! shadow-none!",
     formFieldInputShowPasswordButton: "text-text-muted! hover:text-text-primary!",
 
     otpCodeFieldInputs: "gap-2!",
     otpCodeFieldInput:
-      "h-10! w-10! text-[15px]! font-mono! rounded-md! bg-bg-base! border! border-border-subtle! text-text-primary! caret-text-primary! focus:border-[#3A3A3A]! focus:ring-0! focus:outline-none! shadow-none!",
+      "h-10! w-10! text-[15px]! font-mono! rounded-md! bg-bg-base! border! border-border-subtle! text-text-primary! caret-text-primary! focus:border-border-hover! focus:ring-0! focus:outline-none! shadow-none!",
 
     formButtonPrimary:
-      "h-9! py-0! px-4! rounded-md! bg-text-primary! text-bg-base! font-sans! text-[13px]! font-medium! hover:bg-[#E8E8E8]! shadow-none! transition-colors! normal-case! tracking-normal!",
+      "h-9! py-0! px-4! rounded-md! bg-text-primary! text-bg-base! font-sans! text-[13px]! font-medium! hover:bg-interactive-inverse-hover! shadow-none! transition-colors! normal-case! tracking-normal!",
 
     footer: "hidden!",
     footerAction: "hidden!",

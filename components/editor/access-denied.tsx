@@ -16,8 +16,8 @@ export function AccessDenied() {
             This workspace does not exist or you do not have access to it.
           </p>
         </div>
-        <Link href="/editor" className={cn(buttonVariants())}>
-          Back to editor
+        <Link href="/dashboard" className={cn(buttonVariants())}>
+          Back to dashboard
         </Link>
       </div>
     </main>

@@ -8,6 +8,6 @@ const signUpUrl =
 export default clerkMiddleware({
   signInUrl,
   signUpUrl,
-  afterSignInUrl: '/editor',
-  afterSignUpUrl: '/editor',
+  afterSignInUrl: '/dashboard',
+  afterSignUpUrl: '/dashboard',
 })

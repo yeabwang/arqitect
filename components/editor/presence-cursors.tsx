@@ -5,7 +5,7 @@ import { shallow } from "@liveblocks/react";
 import { useViewport } from "@xyflow/react";
 import { Loader2 } from "lucide-react";
 
-const DEFAULT_CURSOR_COLOR = "#00c8d4";
+const DEFAULT_CURSOR_COLOR = "var(--presence-cyan)";
 
 export function PresenceCursors() {
   const viewport = useViewport();
@@ -43,7 +43,7 @@ export function PresenceCursors() {
               height="20"
               viewBox="0 0 24 24"
               fill={other.color}
-              stroke="rgba(0,0,0,0.35)"
+              stroke="var(--shadow-overlay-35)"
               strokeWidth="1"
               className="drop-shadow"
               aria-hidden
@@ -51,7 +51,7 @@ export function PresenceCursors() {
               <path d="M5.5 3.21V20.79c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87a.5.5 0 0 0 .35-.85L6.35 2.85a.5.5 0 0 0-.85.36Z" />
             </svg>
             <span
-              className="absolute top-4 left-4 flex items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[11px] font-medium text-white shadow"
+              className="absolute top-4 left-4 flex items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[11px] font-medium text-text-primary shadow"
               style={{ backgroundColor: other.color }}
             >
               {other.thinking ? (

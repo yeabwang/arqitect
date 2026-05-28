@@ -16,7 +16,10 @@ All colors are defined as CSS custom properties in `globals.css` and mapped to T
 | Default border   | `--border-default`     | `#1f1f1f`                  |
 | Subtle border    | `--border-subtle`      | `#2a2a2a`                  |
 | Faint border     | `--border-faint`       | `#141414`                  |
+| Hover border     | `--border-hover`       | `#3a3a3a`                  |
 | Grid line        | `--grid-line`          | `rgba(255,255,255,0.025)` |
+| Canvas dot       | `--canvas-dot`         | `rgba(255,255,255,0.06)`  |
+| Canvas edge      | `--canvas-edge`        | `#f8fafc`                  |
 | Primary text     | `--text-primary`       | `#ffffff`                  |
 | Secondary text   | `--text-secondary`     | `#a1a1a1`                  |
 | Muted text       | `--text-muted`         | `#6e6e6e`                  |
@@ -26,8 +29,11 @@ All colors are defined as CSS custom properties in `globals.css` and mapped to T
 | Error            | `--state-error`        | `#e07474`                  |
 | Success          | `--state-success`      | `#6fc079`                  |
 | Warning          | `--state-warning`      | `#d4a55b`                  |
+| Inverse hover    | `--interactive-inverse-hover` | `#e8e8e8`          |
 
 Tailwind utility names map to these variables. Use `bg-bg-base`, `bg-bg-surface`, `text-text-primary`, `text-text-muted`, `border-border-default`, `border-border-faint`, `bg-bg-canvas`, etc.
+
+Shared illustrative SVG, shadow, presence, and node palette values also live in `globals.css` as CSS variables (`--node-*`, `--presence-*`, `--shadow-overlay-*`, `--canvas-*`). Marketing, dashboard, auth, and editor surfaces must reference those variables or their Tailwind mappings instead of embedding literal color values in component files.
 
 ## Typography
 
