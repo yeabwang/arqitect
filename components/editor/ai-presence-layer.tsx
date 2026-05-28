@@ -6,7 +6,7 @@ import { useViewport } from "@xyflow/react";
 import { Bot } from "lucide-react";
 
 const AI_NAME = "Arqitect";
-const AI_COLOR = "#8b82ff";
+const AI_COLOR = "var(--presence-purple)";
 const PRESENCE_TIMEOUT_MS = 8_000;
 
 interface AiPresenceState {
@@ -74,7 +74,7 @@ export function AiPresenceLayer() {
               <path d="M5 3l14 9-7 1-3 7z" />
             </svg>
             <div
-              className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-white shadow"
+              className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-text-primary shadow"
               style={{ backgroundColor: AI_COLOR }}
             >
               <Bot className="h-3 w-3" />
@@ -87,7 +87,7 @@ export function AiPresenceLayer() {
         </div>
       ) : (
         <div
-          className="absolute right-3 top-14 flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium text-white shadow"
+          className="absolute right-3 top-14 flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium text-text-primary shadow"
           style={{ backgroundColor: AI_COLOR }}
         >
           <Bot className="h-3 w-3 animate-pulse" />

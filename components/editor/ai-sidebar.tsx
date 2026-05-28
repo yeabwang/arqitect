@@ -71,10 +71,10 @@ const STARTER_PROMPTS = [
   "Build a CI/CD pipeline",
 ] as const;
 
-const USER_BUBBLE_BG = "#62C073";
-const USER_BUBBLE_TEXT = "#0b1115";
-const SUBMIT_BUTTON_BG = "#62C073";
-const STATUS_ACCENT = "#62C073";
+const USER_BUBBLE_BG = "var(--node-green-text)";
+const USER_BUBBLE_TEXT = "var(--text-inverse-muted)";
+const SUBMIT_BUTTON_BG = "var(--node-green-text)";
+const STATUS_ACCENT = "var(--node-green-text)";
 
 const FAILED_RUN_STATUSES = new Set<string>([
   "FAILED",
@@ -520,7 +520,7 @@ function ArchitectTab({ projectId, roomId }: ArchitectTabProps) {
             onClick={handleSend}
             disabled={draft.trim().length === 0 || inputsDisabled}
             aria-label={inputsDisabled ? "Arqitect is busy" : "Send message"}
-            className="text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40"
+            className="text-text-primary shadow-sm transition-opacity hover:opacity-90 disabled:opacity-40"
             style={{ backgroundColor: SUBMIT_BUTTON_BG }}
           >
             {isSubmitting || isRunActive ? (
@@ -889,7 +889,7 @@ function ChatTab() {
             onClick={() => void handleSend()}
             disabled={draft.trim().length === 0 || disabled}
             aria-label={isSending ? "Sending message" : "Send message"}
-            className="bg-accent-primary text-white hover:bg-accent-primary/90"
+            className="bg-accent-primary text-bg-base hover:bg-accent-primary/90"
           >
             {isSending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -1208,7 +1208,7 @@ function SpecsTab({ projectId, roomId }: SpecsTabProps) {
       type="button"
       onClick={() => void handleGenerate()}
       disabled={isGenerating}
-      className="w-full bg-accent-primary text-white hover:bg-accent-primary/90 disabled:opacity-60"
+      className="w-full bg-accent-primary text-bg-base hover:bg-accent-primary/90 disabled:opacity-60"
     >
       {isGenerating ? (
         <Loader2 className="h-4 w-4 animate-spin" />

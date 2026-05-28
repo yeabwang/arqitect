@@ -238,7 +238,7 @@ function ChaosCardView({ card }: { card: ChaosCard }) {
       className={`chaos-card absolute ${card.className}`}
       data-card={card.id}
     >
-      <div className="overflow-hidden rounded-xl border border-border-default bg-bg-surface/95 shadow-[0_32px_90px_rgba(0,0,0,0.72)] backdrop-blur">
+      <div className="overflow-hidden rounded-xl border border-border-default bg-bg-surface/95 shadow-[0_32px_90px_var(--shadow-overlay-72)] backdrop-blur">
         <div className="flex items-center gap-2 border-b border-border-faint px-3 py-2 font-mono text-[9px] uppercase tracking-[0.16em] text-text-faint">
           <span className="flex gap-1">
             <span className="h-1.5 w-1.5 rounded-full bg-text-faint" />
@@ -253,7 +253,7 @@ function ChaosCardView({ card }: { card: ChaosCard }) {
           <CardDiagram kind={card.kind} />
         </div>
       </div>
-      <div className="mt-2 rounded-lg border border-border-default bg-bg-elevated/90 px-3 py-2 shadow-[0_14px_40px_rgba(0,0,0,0.58)]">
+      <div className="mt-2 rounded-lg border border-border-default bg-bg-elevated/90 px-3 py-2 shadow-[0_14px_40px_var(--shadow-overlay-58)]">
         <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-state-error">
           {card.title}
         </p>
@@ -271,7 +271,7 @@ function ShatterFragments() {
       {fragments.map((fragment) => (
         <div
           key={fragment.id}
-          className={`shatter-fragment absolute rounded-lg border border-border-default bg-bg-elevated/95 p-3 font-mono text-[10px] uppercase tracking-[0.18em] text-text-secondary shadow-[0_24px_70px_rgba(0,0,0,0.7)] ${fragment.className}`}
+          className={`shatter-fragment absolute rounded-lg border border-border-default bg-bg-elevated/95 p-3 font-mono text-[10px] uppercase tracking-[0.18em] text-text-secondary shadow-[0_24px_70px_var(--shadow-overlay-70)] ${fragment.className}`}
         >
           <span className="block h-1 w-10 rounded-full bg-state-error/70" />
           <span className="mt-4 block">{fragment.label}</span>
@@ -283,7 +283,7 @@ function ShatterFragments() {
 
 function ArchitectureCanvas() {
   return (
-    <div className="architecture-canvas overflow-hidden rounded-xl border border-border-default bg-bg-canvas shadow-[0_44px_120px_rgba(0,0,0,0.82)]">
+    <div className="architecture-canvas overflow-hidden rounded-xl border border-border-default bg-bg-canvas shadow-[0_44px_120px_var(--shadow-overlay-82)]">
       <div className="flex items-center gap-2 border-b border-border-faint bg-bg-surface/70 px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-text-muted">
         <span className="flex gap-1">
           <span className="h-1.5 w-1.5 rounded-full bg-text-faint" />
@@ -299,7 +299,7 @@ function ArchitectureCanvas() {
           className="absolute inset-0 opacity-90"
           style={{
             backgroundImage:
-              "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.065) 1px, transparent 0)",
+              "radial-gradient(circle at 1px 1px, var(--canvas-dot-strong) 1px, transparent 0)",
             backgroundSize: "18px 18px",
           }}
           aria-hidden

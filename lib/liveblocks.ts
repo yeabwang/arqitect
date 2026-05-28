@@ -1,14 +1,14 @@
 import { Liveblocks } from "@liveblocks/node";
 
 const CURSOR_COLORS = [
-  "#00c8d4",
-  "#8b82ff",
-  "#52a8ff",
-  "#bf7af0",
-  "#ff990a",
-  "#ff6166",
-  "#62c073",
-  "#0ac7b4",
+  "var(--presence-cyan)",
+  "var(--presence-purple)",
+  "var(--node-blue-text)",
+  "var(--node-purple-text)",
+  "var(--node-orange-text)",
+  "var(--node-red-text)",
+  "var(--node-green-text)",
+  "var(--node-teal-text)",
 ] as const;
 
 const globalForLiveblocks = globalThis as typeof globalThis & {

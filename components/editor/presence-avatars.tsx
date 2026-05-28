@@ -48,7 +48,7 @@ function CollaboratorAvatar({ name, avatarUrl, color }: CollaboratorAvatarProps)
           draggable={false}
         />
       ) : (
-        <span className="text-[10px] font-semibold leading-none text-white">
+        <span className="text-[10px] font-semibold leading-none text-text-primary">
           {initials}
         </span>
       )}

@@ -120,7 +120,7 @@ function GlyphLogo() {
   );
 }
 
-function TopNav() {
+function TopNav({ signedIn }: { signedIn: boolean }) {
   const links = [
     { href: "#product", label: "Product" },
     { href: "#how", label: "How it works" },
@@ -143,19 +143,31 @@ function TopNav() {
           ))}
         </nav>
         <div className="flex items-center gap-1.5">
-          <Link
-            href="/sign-in"
-            className="hidden px-3 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-text-muted transition-colors hover:text-text-primary sm:inline-flex"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/sign-up"
-            className="inline-flex h-9 items-center gap-2 rounded-md bg-text-primary px-3.5 text-[13px] font-medium text-text-on-white text-bg-base transition-colors hover:bg-[#E8E8E8]"
-          >
-            Get started
-            <ArrowRightIcon className="h-3.5 w-3.5" />
-          </Link>
+          {signedIn ? (
+            <Link
+              href="/dashboard"
+              className="inline-flex h-9 items-center gap-2 rounded-md bg-text-primary px-3.5 text-[13px] font-medium text-bg-base transition-colors hover:bg-interactive-inverse-hover"
+            >
+              Go to your account
+              <ArrowRightIcon className="h-3.5 w-3.5" />
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/sign-in"
+                className="hidden px-3 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-text-muted transition-colors hover:text-text-primary sm:inline-flex"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/sign-up"
+                className="inline-flex h-9 items-center gap-2 rounded-md bg-text-primary px-3.5 text-[13px] font-medium text-text-on-white text-bg-base transition-colors hover:bg-interactive-inverse-hover"
+              >
+                Get started
+                <ArrowRightIcon className="h-3.5 w-3.5" />
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
@@ -171,7 +183,7 @@ function Eyebrow() {
   );
 }
 
-function Hero() {
+function Hero({ signedIn }: { signedIn: boolean }) {
   return (
     <section className="relative px-6 pt-20 pb-16 sm:pt-24 sm:pb-20" data-reveal>
       <div className="mx-auto max-w-[1280px]">
@@ -188,15 +200,15 @@ function Hero() {
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-2.5 sm:flex-row">
             <Link
-              href="/sign-up"
-              className="inline-flex h-11 items-center gap-2.5 rounded-md bg-text-primary px-4.5 text-[13px] font-medium text-bg-base transition-colors hover:bg-[#E8E8E8]"
+              href={signedIn ? "/dashboard" : "/sign-up"}
+              className="inline-flex h-11 items-center gap-2.5 rounded-md bg-text-primary px-4.5 text-[13px] font-medium text-bg-base transition-colors hover:bg-interactive-inverse-hover"
             >
-              Get started
+              {signedIn ? "Go to your account" : "Get started"}
               <ArrowRightIcon className="h-3.5 w-3.5" />
             </Link>
             <a
               href="#how"
-              className="inline-flex h-11 items-center gap-2.5 rounded-md border border-border-subtle bg-transparent px-4.5 text-[13px] font-medium text-text-primary transition-colors hover:border-[#3A3A3A] hover:bg-bg-surface"
+              className="inline-flex h-11 items-center gap-2.5 rounded-md border border-border-subtle bg-transparent px-4.5 text-[13px] font-medium text-text-primary transition-colors hover:border-border-hover hover:bg-bg-surface"
             >
               <PlayIcon className="h-3.5 w-3.5" />
               See it in action
@@ -390,17 +402,17 @@ interface DemoNode {
 function statusColor(status?: DemoNode["status"]) {
   switch (status) {
     case "spof":
-      return "#E07474";
+      return "var(--state-error)";
     case "live":
-      return "#20D7E8";
+      return "var(--accent-primary)";
     case "suggested":
-      return "#A1A1A1";
+      return "var(--text-secondary)";
     case "cached":
     case "healthy":
     case "connected":
-      return "#6FC079";
+      return "var(--state-success)";
     default:
-      return "#6E6E6E";
+      return "var(--text-muted)";
   }
 }
 
@@ -408,12 +420,12 @@ function CanvasNodeBlock({ node }: { node: DemoNode }) {
   const w = node.w ?? 130;
   const h = node.h ?? 80;
   const stroke = node.streaming
-    ? "#20D7E8"
+    ? "var(--accent-primary)"
     : node.status === "spof"
-      ? "#E07474"
+      ? "var(--state-error)"
       : node.status === "suggested"
-        ? "#2A2A2A"
-        : "#1F1F1F";
+        ? "var(--border-subtle)"
+        : "var(--border-default)";
   const dashed = node.status === "suggested";
   return (
     <g transform={`translate(${node.x} ${node.y})`}>
@@ -421,11 +433,11 @@ function CanvasNodeBlock({ node }: { node: DemoNode }) {
         width={w}
         height={h}
         rx={6}
-        fill="#0A0A0A"
+        fill="var(--bg-surface)"
         stroke={stroke}
         strokeDasharray={dashed ? "3 3" : undefined}
       />
-      <g transform="translate(10 10)" color={node.streaming ? "#20D7E8" : "#FFFFFF"}>
+      <g transform="translate(10 10)" color={node.streaming ? "var(--accent-primary)" : "var(--text-primary)"}>
         <NodeIcon kind={node.icon} />
       </g>
       <text
@@ -434,16 +446,16 @@ function CanvasNodeBlock({ node }: { node: DemoNode }) {
         fontFamily="Inter"
         fontSize="11"
         fontWeight="600"
-        fill={node.status === "suggested" ? "#A1A1A1" : "#FFFFFF"}
+        fill={node.status === "suggested" ? "var(--text-secondary)" : "var(--text-primary)"}
       >
         {node.title}
       </text>
-      <text x={34} y={33} fontFamily="JetBrains Mono" fontSize="9" fill={node.streaming ? "#20D7E8" : "#6E6E6E"}>
+      <text x={34} y={33} fontFamily="JetBrains Mono" fontSize="9" fill={node.streaming ? "var(--accent-primary)" : "var(--text-muted)"}>
         {node.meta}
       </text>
       {h >= 60 ? (
         <>
-          <line x1={10} y1={48} x2={w - 10} y2={48} stroke="#141414" />
+          <line x1={10} y1={48} x2={w - 10} y2={48} stroke="var(--border-faint)" />
           <text
             x={10}
             y={62}
@@ -455,7 +467,7 @@ function CanvasNodeBlock({ node }: { node: DemoNode }) {
             <tspan fill={statusColor(node.status)}>{node.statusLabel ?? node.status}</tspan>
           </text>
           {node.detail ? (
-            <text x={10} y={74} fontFamily="JetBrains Mono" fontSize="9" fill="#6E6E6E">
+            <text x={10} y={74} fontFamily="JetBrains Mono" fontSize="9" fill="var(--text-muted)">
               {node.detail}
             </text>
           ) : null}
@@ -463,11 +475,11 @@ function CanvasNodeBlock({ node }: { node: DemoNode }) {
       ) : null}
       {node.selected ? (
         <g>
-          <rect width={w} height={h} rx={6} fill="none" stroke="#FFFFFF" strokeWidth={1} strokeDasharray="2 3" />
-          <circle cx={0} cy={0} r={2.5} fill="#FFFFFF" />
-          <circle cx={w} cy={0} r={2.5} fill="#FFFFFF" />
-          <circle cx={0} cy={h} r={2.5} fill="#FFFFFF" />
-          <circle cx={w} cy={h} r={2.5} fill="#FFFFFF" />
+          <rect width={w} height={h} rx={6} fill="none" stroke="var(--text-primary)" strokeWidth={1} strokeDasharray="2 3" />
+          <circle cx={0} cy={0} r={2.5} fill="var(--text-primary)" />
+          <circle cx={w} cy={0} r={2.5} fill="var(--text-primary)" />
+          <circle cx={0} cy={h} r={2.5} fill="var(--text-primary)" />
+          <circle cx={w} cy={h} r={2.5} fill="var(--text-primary)" />
         </g>
       ) : null}
     </g>
@@ -616,11 +628,11 @@ function ProductStage() {
   ];
 
   return (
-    <div className="relative mt-14 overflow-hidden rounded-xl border border-border-default bg-bg-canvas shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
+    <div className="relative mt-14 overflow-hidden rounded-xl border border-border-default bg-bg-canvas shadow-[0_24px_80px_var(--shadow-overlay-60)]">
       <div
         className="absolute inset-0"
         style={{
-          backgroundImage: "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)",
+          backgroundImage: "radial-gradient(circle at 1px 1px, var(--canvas-dot-soft) 1px, transparent 0)",
           backgroundSize: "22px 22px",
         }}
         aria-hidden
@@ -638,7 +650,7 @@ function ProductStage() {
           <span className="hidden sm:inline">28 edges</span>
         </div>
         <div className="flex items-center gap-2 text-accent-primary">
-          <span className="h-1.5 w-1.5 rounded-full bg-accent-primary shadow-[0_0_0_3px_rgba(32,215,232,0.18)]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-accent-primary shadow-[0_0_0_3px_var(--accent-primary-ring)]" />
           <span>Architect · streaming</span>
         </div>
       </div>
@@ -678,21 +690,21 @@ function ProductStage() {
         >
           <defs>
             <marker id="ls-ar" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-              <path d="M0,0 L6,3 L0,6 z" fill="#3A3A3A" />
+              <path d="M0,0 L6,3 L0,6 z" fill="var(--border-hover)" />
             </marker>
             <marker id="ls-ar-cy" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-              <path d="M0,0 L6,3 L0,6 z" fill="#20D7E8" />
+              <path d="M0,0 L6,3 L0,6 z" fill="var(--accent-primary)" />
             </marker>
           </defs>
 
           <g>
-            <rect x="270" y="100" width="400" height="300" rx="8" fill="none" stroke="#161616" strokeDasharray="4 4" />
-            <text x="282" y="118" fontFamily="JetBrains Mono" fontSize="9" fill="#4A4A4A" letterSpacing="2">
+            <rect x="270" y="100" width="400" height="300" rx="8" fill="none" stroke="var(--bg-subtle)" strokeDasharray="4 4" />
+            <text x="282" y="118" fontFamily="JetBrains Mono" fontSize="9" fill="var(--text-faint)" letterSpacing="2">
               SERVICES · GO 1.22
             </text>
           </g>
 
-          <g fill="none" stroke="#2A2A2A" strokeWidth="1.25">
+          <g fill="none" stroke="var(--border-subtle)" strokeWidth="1.25">
             <path d="M125 68 V 96" markerEnd="url(#ls-ar)" />
             <path d="M125 176 V 208" markerEnd="url(#ls-ar)" />
             <path d="M220 250 H 290 V 150" markerEnd="url(#ls-ar)" />
@@ -708,7 +720,7 @@ function ProductStage() {
           <path
             d="M420 250 C 460 250, 480 425, 550 425"
             fill="none"
-            stroke="#20D7E8"
+            stroke="var(--accent-primary)"
             strokeWidth="1.25"
             strokeDasharray="4 4"
             markerEnd="url(#ls-ar-cy)"
@@ -716,18 +728,18 @@ function ProductStage() {
             <animate attributeName="stroke-dashoffset" from="0" to="-16" dur="1s" repeatCount="indefinite" />
           </path>
 
-          <g fontFamily="JetBrains Mono" fontSize="9" fill="#6E6E6E">
+          <g fontFamily="JetBrains Mono" fontSize="9" fill="var(--text-muted)">
             <g transform="translate(228 240)">
-              <rect width="42" height="14" rx="3" fill="#050505" stroke="#1F1F1F" />
+              <rect width="42" height="14" rx="3" fill="var(--bg-canvas)" stroke="var(--border-default)" />
               <text x="6" y="10">REST</text>
             </g>
             <g transform="translate(440 240)">
-              <rect width="36" height="14" rx="3" fill="#050505" stroke="#1F1F1F" />
+              <rect width="36" height="14" rx="3" fill="var(--bg-canvas)" stroke="var(--border-default)" />
               <text x="6" y="10">sql</text>
             </g>
             <g transform="translate(450 340)">
-              <rect width="54" height="14" rx="3" fill="#050505" stroke="#20D7E8" />
-              <text x="6" y="10" fill="#20D7E8">event</text>
+              <rect width="54" height="14" rx="3" fill="var(--bg-canvas)" stroke="var(--accent-primary)" />
+              <text x="6" y="10" fill="var(--accent-primary)">event</text>
             </g>
           </g>
 
@@ -738,13 +750,13 @@ function ProductStage() {
           <g transform="translate(688 388)">
             <path
               d="M0 0L4 14L7 9L12 8L0 0Z"
-              fill="#FFFFFF"
-              stroke="#0A0A0A"
+              fill="var(--text-primary)"
+              stroke="var(--bg-surface)"
               strokeWidth="0.5"
             />
             <g transform="translate(12 12)">
-              <rect width="58" height="16" rx="3" fill="#FFFFFF" />
-              <text x="6" y="11" fontFamily="JetBrains Mono" fontSize="9" fontWeight="600" fill="#000">
+              <rect width="58" height="16" rx="3" fill="var(--text-primary)" />
+              <text x="6" y="11" fontFamily="JetBrains Mono" fontSize="9" fontWeight="600" fill="var(--bg-base)">
                 Arqitect
               </text>
             </g>
@@ -812,20 +824,20 @@ function ProductStage() {
 function StepPromptDrawing() {
   return (
     <svg viewBox="0 0 280 140" className="w-full" role="img" aria-label="A prompt being typed into the architect input">
-      <rect x="8" y="20" width="264" height="100" rx="8" fill="#0A0A0A" stroke="#1F1F1F" />
-      <text x="22" y="42" fontFamily="JetBrains Mono" fontSize="9" fill="#6E6E6E" letterSpacing="2">
+      <rect x="8" y="20" width="264" height="100" rx="8" fill="var(--bg-surface)" stroke="var(--border-default)" />
+      <text x="22" y="42" fontFamily="JetBrains Mono" fontSize="9" fill="var(--text-muted)" letterSpacing="2">
         ASK THE ARCHITECT
       </text>
-      <line x1="22" y1="52" x2="258" y2="52" stroke="#141414" />
-      <text x="22" y="72" fontFamily="JetBrains Mono" fontSize="11" fill="#FFFFFF">
+      <line x1="22" y1="52" x2="258" y2="52" stroke="var(--border-faint)" />
+      <text x="22" y="72" fontFamily="JetBrains Mono" fontSize="11" fill="var(--text-primary)">
         Build a checkout flow with
       </text>
-      <text x="22" y="88" fontFamily="JetBrains Mono" fontSize="11" fill="#FFFFFF">
+      <text x="22" y="88" fontFamily="JetBrains Mono" fontSize="11" fill="var(--text-primary)">
         Stripe, idempotent orders,
       </text>
-      <text x="22" y="104" fontFamily="JetBrains Mono" fontSize="11" fill="#FFFFFF">
+      <text x="22" y="104" fontFamily="JetBrains Mono" fontSize="11" fill="var(--text-primary)">
         and an audit log.
-        <tspan dx="2" fill="#20D7E8">▍</tspan>
+        <tspan dx="2" fill="var(--accent-primary)">▍</tspan>
       </text>
     </svg>
   );
@@ -836,39 +848,39 @@ function StepCanvasDrawing() {
     <svg viewBox="0 0 280 140" className="w-full" role="img" aria-label="A small canvas with services connecting to a database and queue">
       <defs>
         <marker id="step-ar" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-          <path d="M0,0 L6,3 L0,6 z" fill="#3A3A3A" />
+          <path d="M0,0 L6,3 L0,6 z" fill="var(--border-hover)" />
         </marker>
       </defs>
       <pattern id="step-dot" width="14" height="14" patternUnits="userSpaceOnUse">
-        <circle cx="1" cy="1" r="0.8" fill="rgba(255,255,255,0.06)" />
+        <circle cx="1" cy="1" r="0.8" fill="var(--canvas-dot)" />
       </pattern>
-      <rect x="8" y="8" width="264" height="124" rx="8" fill="url(#step-dot)" stroke="#1F1F1F" />
-      <g fill="none" stroke="#2A2A2A" strokeWidth="1.1">
+      <rect x="8" y="8" width="264" height="124" rx="8" fill="url(#step-dot)" stroke="var(--border-default)" />
+      <g fill="none" stroke="var(--border-subtle)" strokeWidth="1.1">
         <path d="M70 40 H 130" markerEnd="url(#step-ar)" />
         <path d="M170 40 H 220" markerEnd="url(#step-ar)" />
         <path d="M150 56 V 88" markerEnd="url(#step-ar)" />
         <path d="M70 100 H 130" markerEnd="url(#step-ar)" />
       </g>
-      <g fontFamily="Inter" fontSize="9" fontWeight="600" fill="#FFFFFF">
+      <g fontFamily="Inter" fontSize="9" fontWeight="600" fill="var(--text-primary)">
         <g transform="translate(28 26)">
-          <rect width="44" height="28" rx="4" fill="#0A0A0A" stroke="#1F1F1F" />
+          <rect width="44" height="28" rx="4" fill="var(--bg-surface)" stroke="var(--border-default)" />
           <text x="22" y="17" textAnchor="middle">Web</text>
         </g>
         <g transform="translate(128 26)">
-          <rect width="44" height="28" rx="4" fill="#0A0A0A" stroke="#FFFFFF" strokeDasharray="2 3" />
+          <rect width="44" height="28" rx="4" fill="var(--bg-surface)" stroke="var(--text-primary)" strokeDasharray="2 3" />
           <text x="22" y="17" textAnchor="middle">API</text>
         </g>
         <g transform="translate(218 26)">
-          <rect width="44" height="28" rx="4" fill="#0A0A0A" stroke="#1F1F1F" />
+          <rect width="44" height="28" rx="4" fill="var(--bg-surface)" stroke="var(--border-default)" />
           <text x="22" y="17" textAnchor="middle">Pay</text>
         </g>
         <g transform="translate(128 86)">
-          <rect width="44" height="28" rx="4" fill="#0A0A0A" stroke="#1F1F1F" />
+          <rect width="44" height="28" rx="4" fill="var(--bg-surface)" stroke="var(--border-default)" />
           <text x="22" y="17" textAnchor="middle">DB</text>
         </g>
         <g transform="translate(28 86)">
-          <rect width="44" height="28" rx="4" fill="#0A0A0A" stroke="#2A2A2A" strokeDasharray="2 2" />
-          <text x="22" y="17" textAnchor="middle" fill="#A1A1A1">Queue</text>
+          <rect width="44" height="28" rx="4" fill="var(--bg-surface)" stroke="var(--border-subtle)" strokeDasharray="2 2" />
+          <text x="22" y="17" textAnchor="middle" fill="var(--text-secondary)">Queue</text>
         </g>
       </g>
     </svg>
@@ -878,26 +890,26 @@ function StepCanvasDrawing() {
 function StepSpecDrawing() {
   return (
     <svg viewBox="0 0 280 140" className="w-full" role="img" aria-label="Generated Markdown specification">
-      <rect x="8" y="8" width="264" height="124" rx="8" fill="#050505" stroke="#1F1F1F" />
-      <text x="22" y="30" fontFamily="JetBrains Mono" fontSize="11" fontWeight="600" fill="#FFFFFF">
+      <rect x="8" y="8" width="264" height="124" rx="8" fill="var(--bg-canvas)" stroke="var(--border-default)" />
+      <text x="22" y="30" fontFamily="JetBrains Mono" fontSize="11" fontWeight="600" fill="var(--text-primary)">
         # Checkout v2
       </text>
-      <text x="22" y="50" fontFamily="JetBrains Mono" fontSize="9" fill="#6E6E6E">
+      <text x="22" y="50" fontFamily="JetBrains Mono" fontSize="9" fill="var(--text-muted)">
         ## Components
       </text>
-      <text x="22" y="64" fontFamily="JetBrains Mono" fontSize="9" fill="#A1A1A1">
+      <text x="22" y="64" fontFamily="JetBrains Mono" fontSize="9" fill="var(--text-secondary)">
         - Web → API → Payments
       </text>
-      <text x="22" y="78" fontFamily="JetBrains Mono" fontSize="9" fill="#A1A1A1">
+      <text x="22" y="78" fontFamily="JetBrains Mono" fontSize="9" fill="var(--text-secondary)">
         - API → Orders DB (sql)
       </text>
-      <text x="22" y="92" fontFamily="JetBrains Mono" fontSize="9" fill="#A1A1A1">
+      <text x="22" y="92" fontFamily="JetBrains Mono" fontSize="9" fill="var(--text-secondary)">
         - API → Queue (suggested)
       </text>
-      <text x="22" y="110" fontFamily="JetBrains Mono" fontSize="9" fill="#6E6E6E">
+      <text x="22" y="110" fontFamily="JetBrains Mono" fontSize="9" fill="var(--text-muted)">
         ## Open questions
       </text>
-      <text x="22" y="124" fontFamily="JetBrains Mono" fontSize="9" fill="#A1A1A1">
+      <text x="22" y="124" fontFamily="JetBrains Mono" fontSize="9" fill="var(--text-secondary)">
         - Payment SLA?
       </text>
     </svg>
@@ -969,19 +981,19 @@ function FeatureCanvasGlyph() {
     <svg viewBox="0 0 220 96" className="w-full" role="img" aria-label="Nodes connected on the canvas">
       <defs>
         <marker id="f1-ar" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
-          <path d="M0,0 L5,2.5 L0,5 z" fill="#3A3A3A" />
+          <path d="M0,0 L5,2.5 L0,5 z" fill="var(--border-hover)" />
         </marker>
       </defs>
-      <g fill="none" stroke="#2A2A2A">
+      <g fill="none" stroke="var(--border-subtle)">
         <path d="M52 26 H 90" markerEnd="url(#f1-ar)" />
         <path d="M122 26 H 160" markerEnd="url(#f1-ar)" />
         <path d="M110 38 V 64" markerEnd="url(#f1-ar)" />
       </g>
       <g>
-        <rect x="20" y="14" width="32" height="24" rx="4" fill="#0A0A0A" stroke="#1F1F1F" />
-        <rect x="90" y="14" width="32" height="24" rx="4" fill="#0A0A0A" stroke="#FFFFFF" />
-        <rect x="160" y="14" width="32" height="24" rx="4" fill="#0A0A0A" stroke="#1F1F1F" />
-        <rect x="94" y="64" width="32" height="22" rx="11" fill="#0A0A0A" stroke="#1F1F1F" />
+        <rect x="20" y="14" width="32" height="24" rx="4" fill="var(--bg-surface)" stroke="var(--border-default)" />
+        <rect x="90" y="14" width="32" height="24" rx="4" fill="var(--bg-surface)" stroke="var(--text-primary)" />
+        <rect x="160" y="14" width="32" height="24" rx="4" fill="var(--bg-surface)" stroke="var(--border-default)" />
+        <rect x="94" y="64" width="32" height="22" rx="11" fill="var(--bg-surface)" stroke="var(--border-default)" />
       </g>
     </svg>
   );
@@ -990,14 +1002,14 @@ function FeatureCanvasGlyph() {
 function FeatureAiGlyph() {
   return (
     <svg viewBox="0 0 220 96" className="w-full" role="img" aria-label="AI suggesting issues">
-      <rect x="14" y="14" width="190" height="68" rx="6" fill="#0A0A0A" stroke="#1F1F1F" />
+      <rect x="14" y="14" width="190" height="68" rx="6" fill="var(--bg-surface)" stroke="var(--border-default)" />
       <g fontFamily="JetBrains Mono" fontSize="9">
-        <circle cx="28" cy="32" r="3" fill="#E07474" />
-        <text x="40" y="35" fill="#FFFFFF">SPOF · sessions cache</text>
-        <circle cx="28" cy="50" r="3" fill="#D4A55B" />
-        <text x="40" y="53" fill="#A1A1A1">assumption · sync payment</text>
-        <circle cx="28" cy="68" r="3" fill="#6FC079" />
-        <text x="40" y="71" fill="#A1A1A1">fix · add retry worker</text>
+        <circle cx="28" cy="32" r="3" fill="var(--state-error)" />
+        <text x="40" y="35" fill="var(--text-primary)">SPOF · sessions cache</text>
+        <circle cx="28" cy="50" r="3" fill="var(--state-warning)" />
+        <text x="40" y="53" fill="var(--text-secondary)">assumption · sync payment</text>
+        <circle cx="28" cy="68" r="3" fill="var(--state-success)" />
+        <text x="40" y="71" fill="var(--text-secondary)">fix · add retry worker</text>
       </g>
     </svg>
   );
@@ -1006,18 +1018,18 @@ function FeatureAiGlyph() {
 function FeatureCollabGlyph() {
   return (
     <svg viewBox="0 0 220 96" className="w-full" role="img" aria-label="Multiple cursors on the canvas">
-      <rect x="14" y="14" width="190" height="68" rx="6" fill="#0A0A0A" stroke="#1F1F1F" />
-      <rect x="36" y="32" width="48" height="32" rx="4" fill="#050505" stroke="#1F1F1F" />
-      <rect x="120" y="32" width="60" height="32" rx="4" fill="#050505" stroke="#1F1F1F" />
+      <rect x="14" y="14" width="190" height="68" rx="6" fill="var(--bg-surface)" stroke="var(--border-default)" />
+      <rect x="36" y="32" width="48" height="32" rx="4" fill="var(--bg-canvas)" stroke="var(--border-default)" />
+      <rect x="120" y="32" width="60" height="32" rx="4" fill="var(--bg-canvas)" stroke="var(--border-default)" />
       <g>
-        <path d="M76 60l3 9 1.5-3.5L84 64 76 60z" fill="#6E9FE6" />
-        <rect x="84" y="64" width="26" height="11" rx="2" fill="#6E9FE6" />
-        <text x="87" y="73" fontFamily="JetBrains Mono" fontSize="8" fill="#0A0A0A" fontWeight="600">Mia</text>
+        <path d="M76 60l3 9 1.5-3.5L84 64 76 60z" fill="var(--presence-blue)" />
+        <rect x="84" y="64" width="26" height="11" rx="2" fill="var(--presence-blue)" />
+        <text x="87" y="73" fontFamily="JetBrains Mono" fontSize="8" fill="var(--bg-surface)" fontWeight="600">Mia</text>
       </g>
       <g>
-        <path d="M150 24l3 9 1.5-3.5L158 28 150 24z" fill="#5BB5A8" />
-        <rect x="158" y="28" width="22" height="11" rx="2" fill="#5BB5A8" />
-        <text x="161" y="37" fontFamily="JetBrains Mono" fontSize="8" fill="#0A0A0A" fontWeight="600">Sai</text>
+        <path d="M150 24l3 9 1.5-3.5L158 28 150 24z" fill="var(--presence-green)" />
+        <rect x="158" y="28" width="22" height="11" rx="2" fill="var(--presence-green)" />
+        <text x="161" y="37" fontFamily="JetBrains Mono" fontSize="8" fill="var(--bg-surface)" fontWeight="600">Sai</text>
       </g>
     </svg>
   );
@@ -1026,17 +1038,17 @@ function FeatureCollabGlyph() {
 function FeatureSpecGlyph() {
   return (
     <svg viewBox="0 0 220 96" className="w-full" role="img" aria-label="Spec generated alongside the canvas">
-      <rect x="14" y="14" width="86" height="68" rx="6" fill="#0A0A0A" stroke="#1F1F1F" />
-      <g fontFamily="JetBrains Mono" fontSize="8" fill="#FFFFFF">
-        <rect x="26" y="26" width="28" height="14" rx="3" fill="#050505" stroke="#1F1F1F" />
-        <rect x="60" y="26" width="28" height="14" rx="3" fill="#050505" stroke="#1F1F1F" />
-        <rect x="26" y="50" width="28" height="14" rx="3" fill="#050505" stroke="#1F1F1F" />
-        <rect x="60" y="50" width="28" height="14" rx="3" fill="#050505" stroke="#1F1F1F" />
+      <rect x="14" y="14" width="86" height="68" rx="6" fill="var(--bg-surface)" stroke="var(--border-default)" />
+      <g fontFamily="JetBrains Mono" fontSize="8" fill="var(--text-primary)">
+        <rect x="26" y="26" width="28" height="14" rx="3" fill="var(--bg-canvas)" stroke="var(--border-default)" />
+        <rect x="60" y="26" width="28" height="14" rx="3" fill="var(--bg-canvas)" stroke="var(--border-default)" />
+        <rect x="26" y="50" width="28" height="14" rx="3" fill="var(--bg-canvas)" stroke="var(--border-default)" />
+        <rect x="60" y="50" width="28" height="14" rx="3" fill="var(--bg-canvas)" stroke="var(--border-default)" />
       </g>
-      <path d="M104 48 H 122" stroke="#3A3A3A" />
-      <rect x="124" y="14" width="80" height="68" rx="6" fill="#050505" stroke="#1F1F1F" />
-      <g fontFamily="JetBrains Mono" fontSize="7" fill="#A1A1A1">
-        <text x="132" y="28" fontWeight="600" fill="#FFFFFF"># spec</text>
+      <path d="M104 48 H 122" stroke="var(--border-hover)" />
+      <rect x="124" y="14" width="80" height="68" rx="6" fill="var(--bg-canvas)" stroke="var(--border-default)" />
+      <g fontFamily="JetBrains Mono" fontSize="7" fill="var(--text-secondary)">
+        <text x="132" y="28" fontWeight="600" fill="var(--text-primary)"># spec</text>
         <text x="132" y="42">## components</text>
         <text x="132" y="54">- web → api</text>
         <text x="132" y="64">- api → db</text>
@@ -1049,30 +1061,30 @@ function FeatureSpecGlyph() {
 function FeatureTemplatesGlyph() {
   return (
     <svg viewBox="0 0 220 96" className="w-full" role="img" aria-label="Starter templates picker">
-      <g fontFamily="Inter" fontSize="9" fill="#FFFFFF" fontWeight="600">
+      <g fontFamily="Inter" fontSize="9" fill="var(--text-primary)" fontWeight="600">
         <g transform="translate(14 14)">
-          <rect width="60" height="68" rx="6" fill="#0A0A0A" stroke="#FFFFFF" />
-          <text x="10" y="14" fontFamily="JetBrains Mono" fontSize="8" fill="#6E6E6E">01</text>
-          <rect x="10" y="22" width="40" height="6" rx="1" fill="#1F1F1F" />
-          <rect x="10" y="32" width="40" height="6" rx="1" fill="#1F1F1F" />
-          <rect x="10" y="42" width="40" height="6" rx="1" fill="#1F1F1F" />
-          <text x="10" y="62" fontSize="8" fill="#A1A1A1">Monolith</text>
+          <rect width="60" height="68" rx="6" fill="var(--bg-surface)" stroke="var(--text-primary)" />
+          <text x="10" y="14" fontFamily="JetBrains Mono" fontSize="8" fill="var(--text-muted)">01</text>
+          <rect x="10" y="22" width="40" height="6" rx="1" fill="var(--border-default)" />
+          <rect x="10" y="32" width="40" height="6" rx="1" fill="var(--border-default)" />
+          <rect x="10" y="42" width="40" height="6" rx="1" fill="var(--border-default)" />
+          <text x="10" y="62" fontSize="8" fill="var(--text-secondary)">Monolith</text>
         </g>
         <g transform="translate(80 14)">
-          <rect width="60" height="68" rx="6" fill="#0A0A0A" stroke="#1F1F1F" />
-          <text x="10" y="14" fontFamily="JetBrains Mono" fontSize="8" fill="#6E6E6E">02</text>
-          <circle cx="20" cy="34" r="4" fill="none" stroke="#1F1F1F" />
-          <circle cx="32" cy="34" r="4" fill="none" stroke="#1F1F1F" />
-          <circle cx="44" cy="34" r="4" fill="none" stroke="#1F1F1F" />
-          <text x="10" y="62" fontSize="8" fill="#A1A1A1">μServices</text>
+          <rect width="60" height="68" rx="6" fill="var(--bg-surface)" stroke="var(--border-default)" />
+          <text x="10" y="14" fontFamily="JetBrains Mono" fontSize="8" fill="var(--text-muted)">02</text>
+          <circle cx="20" cy="34" r="4" fill="none" stroke="var(--border-default)" />
+          <circle cx="32" cy="34" r="4" fill="none" stroke="var(--border-default)" />
+          <circle cx="44" cy="34" r="4" fill="none" stroke="var(--border-default)" />
+          <text x="10" y="62" fontSize="8" fill="var(--text-secondary)">μServices</text>
         </g>
         <g transform="translate(146 14)">
-          <rect width="60" height="68" rx="6" fill="#0A0A0A" stroke="#1F1F1F" />
-          <text x="10" y="14" fontFamily="JetBrains Mono" fontSize="8" fill="#6E6E6E">03</text>
-          <rect x="10" y="26" width="40" height="6" rx="1" fill="#1F1F1F" />
-          <path d="M10 38 H 50" stroke="#20D7E8" strokeDasharray="2 2" />
-          <rect x="10" y="44" width="40" height="6" rx="1" fill="#1F1F1F" />
-          <text x="10" y="62" fontSize="8" fill="#A1A1A1">Event-driven</text>
+          <rect width="60" height="68" rx="6" fill="var(--bg-surface)" stroke="var(--border-default)" />
+          <text x="10" y="14" fontFamily="JetBrains Mono" fontSize="8" fill="var(--text-muted)">03</text>
+          <rect x="10" y="26" width="40" height="6" rx="1" fill="var(--border-default)" />
+          <path d="M10 38 H 50" stroke="var(--accent-primary)" strokeDasharray="2 2" />
+          <rect x="10" y="44" width="40" height="6" rx="1" fill="var(--border-default)" />
+          <text x="10" y="62" fontSize="8" fill="var(--text-secondary)">Event-driven</text>
         </g>
       </g>
     </svg>
@@ -1244,7 +1256,7 @@ function ReviewSection() {
   );
 }
 
-function SoundFamiliarSection() {
+function SoundFamiliarSection({ signedIn }: { signedIn: boolean }) {
   const personas = [
     {
       role: "Engineering lead",
@@ -1275,9 +1287,9 @@ function SoundFamiliarSection() {
               "linear-gradient(to right, var(--grid-line) 1px, transparent 1px), linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px)",
             backgroundSize: "32px 32px",
             WebkitMaskImage:
-              "radial-gradient(ellipse 70% 55% at 50% 30%, #000 30%, transparent 90%)",
+              "radial-gradient(ellipse 70% 55% at 50% 30%, var(--bg-base) 30%, transparent 90%)",
             maskImage:
-              "radial-gradient(ellipse 70% 55% at 50% 30%, #000 30%, transparent 90%)",
+              "radial-gradient(ellipse 70% 55% at 50% 30%, var(--bg-base) 30%, transparent 90%)",
           }}
           aria-hidden
         />
@@ -1317,15 +1329,15 @@ function SoundFamiliarSection() {
 
           <div className="mt-12 flex flex-col items-center justify-center gap-2.5 sm:flex-row">
             <Link
-              href="/sign-up"
-              className="inline-flex h-11 items-center gap-2.5 rounded-md bg-text-primary px-4.5 text-[13px] font-medium text-bg-base transition-colors hover:bg-[#E8E8E8]"
+              href={signedIn ? "/dashboard" : "/sign-up"}
+              className="inline-flex h-11 items-center gap-2.5 rounded-md bg-text-primary px-4.5 text-[13px] font-medium text-bg-base transition-colors hover:bg-interactive-inverse-hover"
             >
-              Get started
+              {signedIn ? "Go to your account" : "Get started"}
               <ArrowRightIcon className="h-3.5 w-3.5" />
             </Link>
             <a
               href="#how"
-              className="inline-flex h-11 items-center gap-2.5 rounded-md border border-border-subtle px-4.5 text-[13px] font-medium text-text-primary transition-colors hover:border-[#3A3A3A] hover:bg-bg-surface"
+              className="inline-flex h-11 items-center gap-2.5 rounded-md border border-border-subtle px-4.5 text-[13px] font-medium text-text-primary transition-colors hover:border-border-hover hover:bg-bg-surface"
             >
               Show me how
             </a>
@@ -1435,8 +1447,8 @@ function PricingSection() {
                   className={
                     "inline-flex h-11 w-full items-center justify-center gap-2 rounded-md text-[13px] font-medium transition-colors " +
                     (t.emphasized
-                      ? "bg-text-primary text-bg-base hover:bg-[#E8E8E8]"
-                      : "border border-border-subtle text-text-primary hover:border-[#3A3A3A] hover:bg-bg-surface")
+                      ? "bg-text-primary text-bg-base hover:bg-interactive-inverse-hover"
+                      : "border border-border-subtle text-text-primary hover:border-border-hover hover:bg-bg-surface")
                   }
                 >
                   {t.cta.label}
@@ -1456,7 +1468,7 @@ function PricingSection() {
   );
 }
 
-function ClosingCTA() {
+function ClosingCTA({ signedIn }: { signedIn: boolean }) {
   return (
     <section className={SECTION_PADDING + " text-center"} data-reveal>
       <div className="mx-auto max-w-[760px]">
@@ -1469,26 +1481,38 @@ function ClosingCTA() {
           <span className="text-text-secondary">Stop drawing systems twice.</span>
         </h2>
         <div className="mt-9 flex flex-col items-center justify-center gap-2.5 sm:flex-row">
-          <Link
-            href="/sign-up"
-            className="inline-flex h-11 items-center gap-2.5 rounded-md bg-text-primary px-4.5 text-[13px] font-medium text-bg-base transition-colors hover:bg-[#E8E8E8]"
-          >
-            Get started
-            <ArrowRightIcon className="h-3.5 w-3.5" />
-          </Link>
-          <Link
-            href="/sign-in"
-            className="inline-flex h-11 items-center gap-2.5 rounded-md border border-border-subtle px-4.5 text-[13px] font-medium text-text-primary transition-colors hover:border-[#3A3A3A] hover:bg-bg-surface"
-          >
-            Sign in
-          </Link>
+          {signedIn ? (
+            <Link
+              href="/dashboard"
+              className="inline-flex h-11 items-center gap-2.5 rounded-md bg-text-primary px-4.5 text-[13px] font-medium text-bg-base transition-colors hover:bg-interactive-inverse-hover"
+            >
+              Go to your account
+              <ArrowRightIcon className="h-3.5 w-3.5" />
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/sign-up"
+                className="inline-flex h-11 items-center gap-2.5 rounded-md bg-text-primary px-4.5 text-[13px] font-medium text-bg-base transition-colors hover:bg-interactive-inverse-hover"
+              >
+                Get started
+                <ArrowRightIcon className="h-3.5 w-3.5" />
+              </Link>
+              <Link
+                href="/sign-in"
+                className="inline-flex h-11 items-center gap-2.5 rounded-md border border-border-subtle px-4.5 text-[13px] font-medium text-text-primary transition-colors hover:border-border-hover hover:bg-bg-surface"
+              >
+                Sign in
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </section>
   );
 }
 
-function SiteFooter() {
+function SiteFooter({ signedIn }: { signedIn: boolean }) {
   return (
     <footer className="border-t border-border-faint px-6 py-9">
       <div className="mx-auto flex max-w-[1280px] flex-col items-start justify-between gap-6 font-mono text-[11px] text-text-muted md:flex-row md:items-center">
@@ -1506,9 +1530,15 @@ function SiteFooter() {
           <a href="#pricing" className="hover:text-text-primary">
             Pricing
           </a>
-          <Link href="/sign-in" className="hover:text-text-primary">
-            Sign in
-          </Link>
+          {signedIn ? (
+            <Link href="/dashboard" className="hover:text-text-primary">
+              Account
+            </Link>
+          ) : (
+            <Link href="/sign-in" className="hover:text-text-primary">
+              Sign in
+            </Link>
+          )}
         </div>
         <span>© 2026 Arqitect Labs, Inc.</span>
       </div>
@@ -1516,7 +1546,7 @@ function SiteFooter() {
   );
 }
 
-export function LandingPage() {
+export function LandingPage({ signedIn = false }: { signedIn?: boolean }) {
   return (
     <main className="relative min-h-screen overflow-hidden bg-bg-base font-sans text-text-primary antialiased">
       <div
@@ -1526,22 +1556,22 @@ export function LandingPage() {
             "linear-gradient(to right, var(--grid-line) 1px, transparent 1px), linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px)",
           backgroundSize: "32px 32px",
           WebkitMaskImage:
-            "radial-gradient(ellipse 80% 60% at 50% 18%, #000 50%, transparent 100%)",
+            "radial-gradient(ellipse 80% 60% at 50% 18%, var(--bg-base) 50%, transparent 100%)",
           maskImage:
-            "radial-gradient(ellipse 80% 60% at 50% 18%, #000 50%, transparent 100%)",
+            "radial-gradient(ellipse 80% 60% at 50% 18%, var(--bg-base) 50%, transparent 100%)",
         }}
         aria-hidden
       />
       <div className="relative z-10">
-        <TopNav />
-        <Hero />
+        <TopNav signedIn={signedIn} />
+        <Hero signedIn={signedIn} />
         <HowItWorksSection />
         <PlatformSection />
         <ReviewSection />
-        <SoundFamiliarSection />
+        <SoundFamiliarSection signedIn={signedIn} />
         <PricingSection />
-        <ClosingCTA />
-        <SiteFooter />
+        <ClosingCTA signedIn={signedIn} />
+        <SiteFooter signedIn={signedIn} />
       </div>
     </main>
   );
