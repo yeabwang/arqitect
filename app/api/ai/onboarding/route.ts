@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
 import { getCurrentProjectIdentity } from "@/lib/project-access";
 import {
@@ -52,6 +52,23 @@ const summaryResultSchema = z.object({
     .array(z.string())
     .describe("material unknowns that were not resolved in the conversation"),
 });
+
+const TURN_JSON_CONTRACT = `\n\nRespond with ONLY a single JSON object — no markdown, no code fences, no commentary — with exactly these keys: {"done": boolean, "recommendation": string, "question": string, "options": string[], "rationale": string}. Use empty string "" or empty array [] where a field does not apply.`;
+
+const SUMMARY_JSON_CONTRACT = `\n\nRespond with ONLY a single JSON object — no markdown, no code fences, no commentary — with exactly these keys: {"summary": string, "openQuestions": string[]}.`;
+
+// Models reached through generateText return a string; pull the JSON object out
+// of it even if the model wraps it in prose or a ```json fence.
+function extractJson(text: string): unknown {
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const body = fence ? fence[1] : text;
+  const start = body.indexOf("{");
+  const end = body.lastIndexOf("}");
+  if (start === -1 || end === -1 || end < start) {
+    throw new Error("no JSON object in model output");
+  }
+  return JSON.parse(body.slice(start, end + 1));
+}
 
 function renderContext(
   name: string,
@@ -119,13 +136,13 @@ export async function POST(request: NextRequest) {
     const model = getOnboardingModel();
 
     if (mode === "turn") {
-      const { object } = await generateObject({
+      const { text } = await generateText({
         model,
-        schema: turnResultSchema,
-        system: buildTurnSystemPrompt(config.maxQuestions),
+        system: buildTurnSystemPrompt(config.maxQuestions) + TURN_JSON_CONTRACT,
         prompt: `${context}\n\nQuestions asked so far: ${transcript.length} of ${config.maxQuestions}.\nDecide the single most valuable next question, or set done=true.`,
         temperature: config.turnTemperature,
       });
+      const object = turnResultSchema.parse(extractJson(text));
       const done = object.done || transcript.length >= config.maxQuestions;
       return Response.json({
         done,
@@ -138,13 +155,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { object } = await generateObject({
+    const { text } = await generateText({
       model,
-      schema: summaryResultSchema,
-      system: buildSummarySystemPrompt(),
+      system: buildSummarySystemPrompt() + SUMMARY_JSON_CONTRACT,
       prompt: `${context}\n\nWrite the architecture brief now.`,
       temperature: config.summaryTemperature,
     });
+    const object = summaryResultSchema.parse(extractJson(text));
     return Response.json({
       summary: object.summary.trim(),
       openQuestions: object.openQuestions
