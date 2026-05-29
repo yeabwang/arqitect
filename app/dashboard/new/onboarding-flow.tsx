@@ -4,7 +4,6 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 
-import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/brand/logo";
 import { buildRoomId, generateRoomIdSuffix } from "@/lib/project-slug";
 import { cn } from "@/lib/utils";
@@ -13,7 +12,6 @@ import {
   type PendingGenerationPayload,
 } from "@/types/onboarding";
 import { OnboardingHub } from "./onboarding-hub";
-import { OnboardingStepper, type StepperStep } from "./onboarding-stepper";
 import { PathBlank } from "./path-blank";
 import { PathPrompt, type PromptPhase } from "./path-prompt";
 import { PathTemplate } from "./path-template";
@@ -21,25 +19,6 @@ import { PathTemplate } from "./path-template";
 interface OnboardingFlowProps {
   initialPath: GenerationMode | null;
 }
-
-const PATH_COPY: Record<
-  GenerationMode,
-  { title: string; subtitle: string }
-> = {
-  blank: {
-    title: "Start from a blank canvas",
-    subtitle: "Name your design and open an empty system canvas.",
-  },
-  template: {
-    title: "Start from a proven pattern",
-    subtitle: "Name your design, then adapt an architecture that already works.",
-  },
-  prompt: {
-    title: "Describe your system",
-    subtitle:
-      "Tell Arqitect what you're building. It drafts the first architecture — and the spec you'll hand off from it.",
-  },
-};
 
 export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
   const router = useRouter();
@@ -57,9 +36,9 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
   const nameValid = name.trim().length > 0 && roomId.length > 0;
   const isPrompt = path === "prompt";
   const isTemplate = path === "template";
-  // Prompt and template render their own full-height surface; only the blank
-  // path uses the shared centered grid + stepper rail.
-  const isFullScreen = isPrompt || isTemplate;
+  // Every path renders its own full-height surface once chosen; only the hub
+  // (path === null) lets the page scroll.
+  const isFullScreen = path !== null;
 
   const choosePath = useCallback(
     (next: GenerationMode) => {
@@ -197,84 +176,20 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
           }
         />
       ) : (
-        <div className="mx-auto grid w-full max-w-5xl flex-1 gap-10 px-6 py-12 lg:grid-cols-[1fr_240px]">
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-1">
-              <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
-                {PATH_COPY.blank.title}
-              </h1>
-              <p className="text-sm text-text-secondary">
-                {PATH_COPY.blank.subtitle}
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="design-name"
-                className="font-mono text-[10px] tracking-[0.18em] text-text-muted uppercase"
-              >
-                Design name
-              </label>
-              <Input
-                id="design-name"
-                autoFocus
-                placeholder="e.g. Billing service"
-                value={name}
-                onChange={(event) => {
-                  setName(event.target.value);
-                  if (error) setError(null);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && nameValid && !isLoading) {
-                    event.preventDefault();
-                    void createDesign(null, (id) => `/editor/${id}`);
-                  }
-                }}
-              />
-              {roomId ? (
-                <p className="text-xs text-text-muted">
-                  Room ID:{" "}
-                  <span className="font-mono text-text-secondary">
-                    {roomId}
-                  </span>
-                </p>
-              ) : null}
-            </div>
-
-            <PathBlank
-              nameValid={nameValid}
-              isLoading={isLoading}
-              onCreate={() => void createDesign(null, (id) => `/editor/${id}`)}
-            />
-
-            {error ? (
-              <p className="text-xs text-state-error">{error}</p>
-            ) : null}
-          </div>
-
-          <aside className="hidden lg:block">
-            <OnboardingStepper steps={blankSteps(nameValid)} />
-          </aside>
-        </div>
+        <PathBlank
+          name={name}
+          roomId={roomId}
+          nameValid={nameValid}
+          isLoading={isLoading}
+          createError={error}
+          onNameChange={(value) => {
+            setName(value);
+            if (error) setError(null);
+          }}
+          onCreate={() => void createDesign(null, (id) => `/editor/${id}`)}
+        />
       )}
     </div>
   );
-}
-
-function blankSteps(nameValid: boolean): StepperStep[] {
-  return [
-    {
-      id: "name",
-      title: "Name your design",
-      subtitle: "Give it a short, clear name",
-      state: nameValid ? "done" : "active",
-    },
-    {
-      id: "canvas",
-      title: "Open canvas",
-      subtitle: "Start building",
-      state: "upcoming",
-    },
-  ];
 }
 
