@@ -10,13 +10,26 @@ import {
   type CanvasNodeShape,
 } from "@/types/canvas";
 
+export type TemplateComplexity = "Starter" | "Intermediate" | "Advanced";
+
 // A predefined diagram the user can drop onto the canvas in place of the
 // current work. Reuses the shared canvas node/edge types so imported elements
-// behave exactly like hand-drawn ones.
+// behave exactly like hand-drawn ones. The descriptive metadata powers the
+// searchable/filterable template gallery and the premium template cards.
 export interface CanvasTemplate {
   id: string;
   name: string;
   description: string;
+  /** Best-fit situation for this pattern (shown as "Best for ..."). */
+  useCase: string;
+  /** Relative architecture complexity, used for the badge and filter. */
+  complexity: TemplateComplexity;
+  /** Suggested stack or system type (mono line on the card). */
+  stack: string;
+  /** Grouping for the gallery filter (e.g. Backend, Delivery, Messaging). */
+  category: string;
+  /** Free-text tags for search + chips. */
+  tags: string[];
   nodes: CanvasNode[];
   edges: CanvasEdge[];
 }
@@ -72,6 +85,11 @@ const microservices: CanvasTemplate = {
   name: "Microservices",
   description:
     "Client traffic through an API gateway fanning out to auth, user, and order services backed by a shared database.",
+  useCase: "Splitting a monolith into independently deployable services.",
+  complexity: "Intermediate",
+  stack: "API gateway · services · shared database",
+  category: "Backend",
+  tags: ["api-gateway", "services", "rest", "database", "monolith-split"],
   nodes: [
     node("client", "Client", "pill", 1, 280, 0),
     node("gateway", "API Gateway", "rectangle", 3, 270, 140),
@@ -95,6 +113,11 @@ const cicd: CanvasTemplate = {
   name: "CI/CD Pipeline",
   description:
     "A linear delivery pipeline from commit through build, test, and staged deploys to production.",
+  useCase: "Automating build, test, and staged deploys to production.",
+  complexity: "Starter",
+  stack: "CI runner · build · test · environments",
+  category: "Delivery",
+  tags: ["ci", "cd", "pipeline", "deploy", "release"],
   nodes: [
     node("commit", "Commit", "circle", 1, 0, 60),
     node("build", "Build", "rectangle", 3, 200, 70),
@@ -115,6 +138,11 @@ const eventDriven: CanvasTemplate = {
   name: "Event-Driven System",
   description:
     "A producer publishing to a central event bus that fans out to independent consumers and a data store.",
+  useCase: "Decoupling producers from consumers for async workloads.",
+  complexity: "Advanced",
+  stack: "Event bus · consumers · data store",
+  category: "Messaging",
+  tags: ["events", "pub-sub", "async", "queue", "streaming"],
   nodes: [
     node("producer", "Producer", "rectangle", 3, 0, 160),
     node("bus", "Event Bus", "hexagon", 7, 280, 150),

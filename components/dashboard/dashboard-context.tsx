@@ -1,9 +1,11 @@
 "use client";
 
 import { createContext, useContext } from "react";
+import type { GenerationMode } from "@/types/onboarding";
 
 export interface DashboardContextValue {
-  openCreateDesign: () => void;
+  /** Navigate to the full-screen /dashboard/new onboarding, optionally preselecting a path. */
+  openCreateDesign: (mode?: GenerationMode) => void;
   invitationCount: number;
 }
 

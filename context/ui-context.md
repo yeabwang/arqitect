@@ -44,6 +44,63 @@ Shared illustrative SVG, shadow, presence, and node palette values also live in 
 
 Both fonts are loaded via `next/font/google` and applied as CSS variables on the `<html>` element. The base `body` uses Inter with `antialiased`; mono labels, identifiers, and numbered section prefixes use JetBrains Mono.
 
+## Product Language
+
+Arqitect speaks to engineering leads, architects, technical founders, and product engineering squads. Copy should feel precise, calm, and implementation-minded. The product is not a generic brainstorming board; it is a system design workspace that turns architecture conversations into a canvas, reviewable decisions, and developable specs.
+
+### Voice
+
+- Use plain engineering language.
+- Prefer concrete outcomes over hype.
+- Write like a senior teammate helping the user move from ambiguity to implementation.
+- Keep sentences short in UI surfaces. Longer explanation belongs in docs, empty states, or generated specs.
+- Be confident without claiming the AI is always correct.
+
+### Preferred Terms
+
+- Use `design`, `system`, `architecture`, `canvas`, `component`, `flow`, `decision`, `spec`, `handoff`, and `review`.
+- Use `Arqitect` for the AI/product agent when the user is collaborating with the system.
+- Use `AI co-architect` or `AI architect` when naming the capability.
+- Use `spec` or `technical spec` for generated Markdown artifacts.
+- Use `handoff brief` for coding-agent-oriented exports.
+
+### Avoid
+
+- Avoid generic whiteboard language as the primary value: `brainstorm`, `sticky notes`, `infinite ideas`, `visual playground`.
+- Avoid vague AI hype: `magic`, `10x`, `autonomous architect`, `perfect architecture`, `instant production system`.
+- Avoid overpromising implementation certainty. Say `review risks`, `draft`, `suggest`, `generate a spec`, or `prepare a handoff` instead of implying the AI guarantees correctness.
+- Avoid jargon unless it is useful to the target user. If using terms like `SPOF`, `ADR`, `C4`, `event-driven`, or `idempotency`, make sure the surrounding UI provides enough context.
+- Avoid the word `graph` in user-facing product copy unless referring to a technical data structure in developer docs. Prefer `canvas`, `system`, or `design`.
+
+### Headlines
+
+- Headlines should name the user outcome, not the feature inventory.
+- Good: `Turn architecture conversations into developable specs.`
+- Good: `Design software systems an AI can implement from.`
+- Good: `Review the system before code starts.`
+- Avoid: `Powerful AI diagramming for everyone.`
+- Avoid: `Collaborate visually with next-generation intelligence.`
+
+### Buttons and Actions
+
+- Button labels should be short verb phrases that describe the action.
+- Good: `New design`, `Open canvas`, `Generate spec`, `Review design`, `Ask Arqitect`, `Use template`, `Download spec`, `Save decision`.
+- Avoid vague labels like `Submit`, `Continue`, `Go`, or `Click here` when a specific action is known.
+- Destructive actions must name the object: `Delete design`, `Remove collaborator`, `Delete decision`.
+- AI actions should set expectations: `Draft architecture`, `Find risks`, `Ask clarifying questions`, `Generate handoff brief`.
+
+### Empty States
+
+- Empty states should give the next useful action immediately.
+- Keep them practical: what the user can do now, what will happen next, and why it helps.
+- Do not use playful filler copy. This audience is trying to plan real systems.
+
+### Generated Spec Language
+
+- Generated specs should be factual, scoped, and explicit about assumptions.
+- Prefer `Assumption:`, `Open question:`, and `Risk:` labels over burying uncertainty in prose.
+- Do not invent components, integrations, or guarantees that are not grounded in the canvas, metadata, or chat context.
+
 ## Border Radius
 
 Radius increases with surface depth — smaller for inner elements, larger for outer containers.

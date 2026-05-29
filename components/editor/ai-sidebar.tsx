@@ -24,10 +24,12 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   Bot,
+  Check,
   Download,
   FileText,
   Loader2,
   MessageSquare,
+  PencilLine,
   Send,
   Sparkles,
   TriangleAlert,
@@ -35,6 +37,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -57,12 +60,22 @@ import {
   type AiStatusFeedPayload,
 } from "@/types/tasks";
 import type { designAgentTask } from "@/trigger/design-agent";
+import type { PendingGenerationClient } from "@/components/editor/editor-workspace-client";
+import { buildGenerationPrompt } from "@/lib/onboarding-prompt";
+import {
+  INTERVIEW_FIELDS,
+  INTERVIEW_FIELD_META,
+  deriveOpenQuestions,
+  type InterviewAnswers,
+  type InterviewField,
+} from "@/types/onboarding";
 
 interface AiSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   projectId: string;
   roomId: string;
+  pendingGeneration?: PendingGenerationClient | null;
 }
 
 const STARTER_PROMPTS = [
@@ -155,6 +168,7 @@ export function AiSidebar({
   onClose,
   projectId,
   roomId,
+  pendingGeneration = null,
 }: AiSidebarProps) {
   const [tab, setTab] = useState<"architect" | "chat" | "specs">("architect");
 
@@ -221,7 +235,11 @@ export function AiSidebar({
           value="architect"
           className="flex min-h-0 flex-1 flex-col gap-0"
         >
-          <ArchitectTab projectId={projectId} roomId={roomId} />
+          <ArchitectTab
+            projectId={projectId}
+            roomId={roomId}
+            pendingGeneration={pendingGeneration}
+          />
         </TabsContent>
 
         <TabsContent
@@ -245,9 +263,14 @@ export function AiSidebar({
 interface ArchitectTabProps {
   projectId: string;
   roomId: string;
+  pendingGeneration: PendingGenerationClient | null;
 }
 
-function ArchitectTab({ projectId, roomId }: ArchitectTabProps) {
+function ArchitectTab({
+  projectId,
+  roomId,
+  pendingGeneration,
+}: ArchitectTabProps) {
   const { user } = useUser();
   const createFeed = useCreateFeed();
   const createFeedMessage = useCreateFeedMessage();
@@ -258,8 +281,33 @@ function ArchitectTab({ projectId, roomId }: ArchitectTabProps) {
   const [draft, setDraft] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeRun, setActiveRun] = useState<ActiveRun | null>(null);
+  const [reviewActive, setReviewActive] = useState(pendingGeneration !== null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const ensureFeedRef = useRef<Promise<void> | null>(null);
+
+  const dismissPendingGeneration = useCallback(async () => {
+    try {
+      await fetch(`/api/projects/${projectId}/pending-generation`, {
+        method: "DELETE",
+      });
+    } catch {
+      // Best-effort — the row expires on its own within 24h.
+    }
+  }, [projectId]);
+
+  const handleReviewConfirm = useCallback(
+    (prompt: string) => {
+      setDraft(prompt);
+      setReviewActive(false);
+      void dismissPendingGeneration();
+    },
+    [dismissPendingGeneration],
+  );
+
+  const handleReviewDismiss = useCallback(() => {
+    setReviewActive(false);
+    void dismissPendingGeneration();
+  }, [dismissPendingGeneration]);
 
   const ensureFeed = useCallback(() => {
     if (ensureFeedRef.current) {
@@ -477,7 +525,13 @@ function ArchitectTab({ projectId, roomId }: ArchitectTabProps) {
         ref={scrollRef}
         className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4"
       >
-        {!hasAnyChat ? (
+        {reviewActive && pendingGeneration ? (
+          <PendingGenerationReview
+            pendingGeneration={pendingGeneration}
+            onConfirm={handleReviewConfirm}
+            onDismiss={handleReviewDismiss}
+          />
+        ) : !hasAnyChat ? (
           <ArchitectEmptyState
             onStarterClick={handleStarterClick}
             disabled={inputsDisabled}
@@ -724,6 +778,178 @@ function ArchitectEmptyState({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+interface PendingGenerationReviewProps {
+  pendingGeneration: PendingGenerationClient;
+  onConfirm: (prompt: string) => void;
+  onDismiss: () => void;
+}
+
+function PendingGenerationReview({
+  pendingGeneration,
+  onConfirm,
+  onDismiss,
+}: PendingGenerationReviewProps) {
+  const { payload } = pendingGeneration;
+  const isInterview = payload.kind === "interview";
+
+  const [answers, setAnswers] = useState<InterviewAnswers>(() =>
+    payload.kind === "interview"
+      ? { ...payload.answers }
+      : INTERVIEW_FIELDS.reduce((acc, field) => {
+          acc[field] = "";
+          return acc;
+        }, {} as InterviewAnswers),
+  );
+  const [freePrompt, setFreePrompt] = useState(() =>
+    payload.kind === "free-form" ? payload.prompt : "",
+  );
+
+  const openQuestions = isInterview ? deriveOpenQuestions(answers) : [];
+
+  const confirmDisabled = isInterview
+    ? answers.systemGoal.trim().length === 0
+    : freePrompt.trim().length === 0;
+
+  const handleConfirm = useCallback(() => {
+    if (isInterview) {
+      const trimmed = INTERVIEW_FIELDS.reduce((acc, field) => {
+        acc[field] = answers[field].trim();
+        return acc;
+      }, {} as InterviewAnswers);
+      const prompt = buildGenerationPrompt({
+        kind: "interview",
+        answers: trimmed,
+        openQuestions: deriveOpenQuestions(trimmed),
+      });
+      onConfirm(prompt);
+      return;
+    }
+    onConfirm(
+      buildGenerationPrompt({
+        kind: "free-form",
+        prompt: freePrompt.trim(),
+        openQuestions: payload.kind === "free-form" ? payload.openQuestions : [],
+      }),
+    );
+  }, [answers, freePrompt, isInterview, onConfirm, payload]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-start gap-2">
+        <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border-default bg-bg-elevated text-accent-ai-text">
+          <Bot className="h-4 w-4" />
+        </span>
+        <div className="flex flex-col gap-0.5">
+          <p className="text-sm font-medium text-text-primary">
+            Review before Arqitect drafts
+          </p>
+          <p className="text-xs text-text-muted">
+            Edit anything, then confirm. Your answers become the prompt below —
+            you stay in control before generation runs.
+          </p>
+        </div>
+      </div>
+
+      {isInterview ? (
+        <div className="flex flex-col gap-3">
+          {INTERVIEW_FIELDS.map((field) => (
+            <ReviewField
+              key={field}
+              field={field}
+              value={answers[field]}
+              onChange={(value) =>
+                setAnswers((prev) => ({ ...prev, [field]: value }))
+              }
+            />
+          ))}
+        </div>
+      ) : (
+        <Textarea
+          value={freePrompt}
+          onChange={(event) => setFreePrompt(event.target.value)}
+          placeholder="Describe the system you want Arqitect to draft..."
+          className="min-h-[140px] resize-none bg-bg-elevated text-sm"
+        />
+      )}
+
+      {openQuestions.length > 0 ? (
+        <div className="rounded-xl border border-state-warning/30 bg-state-warning/10 px-3 py-2 text-xs text-state-warning">
+          <p className="font-medium">
+            {openQuestions.length} field
+            {openQuestions.length === 1 ? "" : "s"} left open
+          </p>
+          <p className="mt-0.5 text-state-warning/80">
+            These stay visible as open questions on the design rather than being
+            guessed.
+          </p>
+        </div>
+      ) : null}
+
+      <div className="flex flex-col gap-2">
+        <Button
+          type="button"
+          onClick={handleConfirm}
+          disabled={confirmDisabled}
+          className="w-full"
+          style={{ backgroundColor: SUBMIT_BUTTON_BG }}
+        >
+          <Check className="h-4 w-4" />
+          Confirm and prefill prompt
+        </Button>
+        <p className="text-center text-[11px] text-text-faint">
+          Generation runs when you send. Full auto-generation arrives in the
+          next release.
+        </p>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="inline-flex items-center justify-center gap-1.5 self-center text-[11px] text-text-muted underline-offset-4 transition-colors hover:text-text-secondary hover:underline"
+        >
+          <PencilLine className="h-3 w-3" />
+          Discard and start from scratch
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface ReviewFieldProps {
+  field: InterviewField;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function ReviewField({ field, value, onChange }: ReviewFieldProps) {
+  const meta = INTERVIEW_FIELD_META[field];
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.14em] text-text-muted uppercase">
+        {meta.label}
+        {meta.required ? (
+          <span className="text-state-error" aria-hidden>
+            *
+          </span>
+        ) : null}
+      </label>
+      {meta.multiline ? (
+        <Textarea
+          value={value}
+          placeholder={meta.placeholder}
+          onChange={(event) => onChange(event.target.value)}
+          className="min-h-[64px] resize-none bg-bg-elevated text-sm"
+        />
+      ) : (
+        <Input
+          value={value}
+          placeholder={meta.placeholder}
+          onChange={(event) => onChange(event.target.value)}
+          className="bg-bg-elevated"
+        />
+      )}
     </div>
   );
 }

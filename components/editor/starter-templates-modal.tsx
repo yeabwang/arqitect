@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -140,7 +141,13 @@ function PreviewShape({ node }: { node: PreviewNode }) {
 // Self-scaling diagram preview. Computes diagram bounds from node footprints and
 // renders everything inside one SVG with a fitted viewBox, so it always fills
 // the card width without clipping and needs no React Flow instance.
-function TemplatePreview({ template }: { template: CanvasTemplate }) {
+export function TemplatePreview({
+  template,
+  className,
+}: {
+  template: CanvasTemplate;
+  className?: string;
+}) {
   const { nodes, edges, viewBox } = useMemo(() => {
     const previewNodes: PreviewNode[] = template.nodes.map((item) => {
       const fallback = DEFAULT_NODE_SIZES[item.data.shape];
@@ -192,7 +199,12 @@ function TemplatePreview({ template }: { template: CanvasTemplate }) {
   }, [template]);
 
   return (
-    <div className="h-48 w-full overflow-hidden rounded-xl border border-border-subtle bg-background bg-[radial-gradient(var(--border-subtle)_1px,transparent_1px)] [background-size:16px_16px]">
+    <div
+      className={cn(
+        "h-48 w-full overflow-hidden rounded-xl border border-border-subtle bg-background bg-[radial-gradient(var(--border-subtle)_1px,transparent_1px)] [background-size:16px_16px]",
+        className,
+      )}
+    >
       <svg
         className="h-full w-full"
         viewBox={viewBox}

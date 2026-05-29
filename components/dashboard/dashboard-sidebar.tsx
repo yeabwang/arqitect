@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/brand/logo";
 import { useDashboard } from "@/components/dashboard/dashboard-context";
 
 interface NavItem {
@@ -84,22 +85,12 @@ export function DashboardSidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-30 flex w-56 flex-col border-r border-border-default bg-bg-surface">
       <div className="flex h-14 items-center gap-2 px-4 border-b border-border-faint">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 text-sm font-semibold tracking-tight text-text-primary"
-        >
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-bg-elevated font-mono text-[12px] text-text-primary border border-border-default">
-            A
-          </span>
-          <span className="font-mono text-[13px] tracking-[0.04em]">
-            Arqitect
-          </span>
-        </Link>
+        <Logo href="/dashboard" />
       </div>
 
       <div className="px-3 py-3">
         <Button
-          onClick={openCreateDesign}
+          onClick={() => openCreateDesign()}
           className="w-full justify-center gap-1.5"
           size="sm"
         >

@@ -14,22 +14,40 @@ import {
   type Project,
   type ProjectInvitation,
 } from "@/hooks/use-project-dialogs";
+import type { PendingGenerationPayload } from "@/types/onboarding";
+
+export type EditorStartMode = "template" | "ai" | null;
+
+export interface PendingGenerationClient {
+  payload: PendingGenerationPayload;
+  rawPrompt: string | null;
+}
 
 interface EditorWorkspaceClientProps {
   currentProject: Project;
   initialProjects: Project[];
   initialInvitations: ProjectInvitation[];
+  startMode?: EditorStartMode;
+  templateId?: string | null;
+  pendingGeneration?: PendingGenerationClient | null;
 }
 
 export function EditorWorkspaceClient({
   currentProject,
   initialProjects,
   initialInvitations,
+  startMode = null,
+  templateId = null,
+  pendingGeneration = null,
 }: EditorWorkspaceClientProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(true);
+  const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(
+    startMode === "ai" || startMode === null,
+  );
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(
+    startMode === "template" && !templateId,
+  );
   const [saveStatus, setSaveStatus] = useState<CanvasSaveStatus>("idle");
   const dialogs = useProjectDialogs(initialProjects, initialInvitations);
 
@@ -75,10 +93,12 @@ export function EditorWorkspaceClient({
               projectId={currentProject.id}
               templatesOpen={isTemplatesOpen}
               onTemplatesOpenChange={setIsTemplatesOpen}
+              templateId={templateId}
               onSaveStatusChange={setSaveStatus}
               aiSidebarOpen={isAiSidebarOpen}
               onToggleAiSidebar={() => setIsAiSidebarOpen((open) => !open)}
               onCloseAiSidebar={() => setIsAiSidebarOpen(false)}
+              pendingGeneration={pendingGeneration}
             />
           </div>
         </div>

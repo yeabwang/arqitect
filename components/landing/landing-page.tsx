@@ -1,16 +1,7 @@
 import Link from "next/link";
 import type { SVGProps } from "react";
+import { Logo } from "@/components/brand/logo";
 import { SystemTabsTransformation } from "./system-tabs-transformation";
-
-function LogoMark(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
-      <rect x="0" y="5" width="8" height="4" fill="currentColor" />
-      <rect x="4" y="10" width="8" height="4" fill="currentColor" />
-      <rect x="8" y="15" width="8" height="4" fill="currentColor" />
-    </svg>
-  );
-}
 
 function ArrowRightIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -110,14 +101,7 @@ function SectionHead({
 }
 
 function GlyphLogo() {
-  return (
-    <Link href="/" className="flex items-center gap-2.5" aria-label="Arqitect home">
-      <LogoMark className="h-5 w-5 text-text-primary" />
-      <span className="font-sans text-[13px] font-semibold tracking-[0.14em] text-text-primary">
-        ARQITECT<span className="text-text-muted">.</span>
-      </span>
-    </Link>
-  );
+  return <Logo href="/" />;
 }
 
 function TopNav({ signedIn }: { signedIn: boolean }) {
