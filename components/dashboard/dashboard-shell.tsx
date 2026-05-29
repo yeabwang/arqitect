@@ -7,12 +7,8 @@ import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import {
   DashboardProvider,
   type DashboardContextValue,
-  type StartDesignMode,
 } from "@/components/dashboard/dashboard-context";
-import {
-  StartDesignDialog,
-  MAX_AI_PROMPT_LENGTH,
-} from "@/components/dashboard/start-design-dialog";
+import { CreateProjectDialog } from "@/components/editor/create-project-dialog";
 
 interface DashboardShellProps {
   invitationCount: number;
@@ -33,25 +29,6 @@ function generateSuffix(): string {
   return crypto.randomUUID().slice(0, 6);
 }
 
-function buildEditorPath(
-  projectId: string,
-  mode: StartDesignMode,
-  aiPrompt: string,
-): string {
-  if (mode === "template") {
-    return `/editor/${projectId}?start=template`;
-  }
-  if (mode === "ai") {
-    const params = new URLSearchParams({ start: "ai" });
-    const trimmed = aiPrompt.trim().slice(0, MAX_AI_PROMPT_LENGTH);
-    if (trimmed.length > 0) {
-      params.set("prompt", trimmed);
-    }
-    return `/editor/${projectId}?${params.toString()}`;
-  }
-  return `/editor/${projectId}`;
-}
-
 export function DashboardShell({
   invitationCount,
   workspaceName,
@@ -59,9 +36,7 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
-  const [mode, setMode] = useState<StartDesignMode>("blank");
   const [formName, setFormName] = useState("");
-  const [aiPrompt, setAiPrompt] = useState("");
   const [slugSuffix, setSlugSuffix] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,10 +47,8 @@ export function DashboardShell({
     return slugSuffix ? `${base}-${slugSuffix}` : base;
   }, [formName, slugSuffix]);
 
-  const openCreateDesign = useCallback((nextMode: StartDesignMode = "blank") => {
-    setMode(nextMode);
+  const openCreateDesign = useCallback(() => {
     setFormName("");
-    setAiPrompt("");
     setSlugSuffix(generateSuffix());
     setError(null);
     setIsLoading(false);
@@ -85,7 +58,6 @@ export function DashboardShell({
   const closeCreate = useCallback(() => {
     setCreateOpen(false);
     setFormName("");
-    setAiPrompt("");
     setSlugSuffix("");
     setIsLoading(false);
     setError(null);
@@ -103,18 +75,17 @@ export function DashboardShell({
       });
       if (!res.ok) throw new Error("Failed to create design");
       const project = await res.json();
-      const target = buildEditorPath(project.id, mode, aiPrompt);
       closeCreate();
-      router.push(target);
+      router.push(`/editor/${project.id}`);
     } catch {
       setIsLoading(false);
       setError("Failed to create design. Please try again.");
     }
-  }, [formName, roomIdPreview, mode, aiPrompt, router, closeCreate]);
+  }, [formName, roomIdPreview, router, closeCreate]);
 
   const ctx: DashboardContextValue = useMemo(
     () => ({ openCreateDesign, invitationCount }),
-    [openCreateDesign, invitationCount],
+    [openCreateDesign, invitationCount]
   );
 
   return (
@@ -127,17 +98,13 @@ export function DashboardShell({
         </div>
       </div>
 
-      <StartDesignDialog
+      <CreateProjectDialog
         open={createOpen}
-        mode={mode}
         formName={formName}
-        aiPrompt={aiPrompt}
         roomIdPreview={roomIdPreview}
         isLoading={isLoading}
         error={error}
-        onModeChange={setMode}
         onFormNameChange={setFormName}
-        onAiPromptChange={setAiPrompt}
         onClose={closeCreate}
         onSubmit={handleCreate}
       />

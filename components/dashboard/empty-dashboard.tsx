@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, Sparkles, Plus, LayoutTemplate } from "lucide-react";
+import Link from "next/link";
 import { useDashboard } from "@/components/dashboard/dashboard-context";
 
 export function EmptyDashboard() {
@@ -16,13 +17,13 @@ export function EmptyDashboard() {
             Draft your first system in minutes.
           </h2>
           <p className="max-w-md text-sm text-text-secondary">
-            Start with a prompt, a template, or a blank canvas. Export the spec
-            when the design is ready.
+            Sketch it on the canvas, prompt the AI architect, or import a
+            template. Arqitect turns the result into a spec you can ship.
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => openCreateDesign("blank")}
+              onClick={openCreateDesign}
               className="inline-flex h-10 items-center gap-2 rounded-md bg-text-primary px-3.5 text-[13px] font-medium text-bg-base transition-colors hover:bg-interactive-inverse-hover"
             >
               <Plus className="h-4 w-4" />
@@ -31,20 +32,19 @@ export function EmptyDashboard() {
             </button>
             <button
               type="button"
-              onClick={() => openCreateDesign("ai")}
+              onClick={openCreateDesign}
               className="inline-flex h-10 items-center gap-2 rounded-md border border-border-subtle bg-bg-elevated/60 px-3.5 text-[13px] font-medium text-text-primary transition-colors hover:border-border-subtle hover:bg-bg-elevated"
             >
               <Sparkles className="h-4 w-4 text-accent-primary" />
-              Prompt Arqitect
+              Generate with AI
             </button>
-            <button
-              type="button"
-              onClick={() => openCreateDesign("template")}
+            <Link
+              href="/dashboard/templates"
               className="inline-flex h-10 items-center gap-2 rounded-md border border-border-subtle bg-bg-elevated/40 px-3.5 text-[13px] font-medium text-text-secondary transition-colors hover:text-text-primary"
             >
               <LayoutTemplate className="h-4 w-4" />
-              Use template
-            </button>
+              Templates
+            </Link>
           </div>
         </div>
         <div className="relative min-h-[220px] border-t border-border-faint sm:border-t-0 sm:border-l">

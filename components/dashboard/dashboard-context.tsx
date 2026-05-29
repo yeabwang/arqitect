@@ -2,10 +2,8 @@
 
 import { createContext, useContext } from "react";
 
-export type StartDesignMode = "blank" | "template" | "ai";
-
 export interface DashboardContextValue {
-  openCreateDesign: (mode?: StartDesignMode) => void;
+  openCreateDesign: () => void;
   invitationCount: number;
 }
 

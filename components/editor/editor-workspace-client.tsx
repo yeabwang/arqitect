@@ -9,7 +9,6 @@ import { RenameProjectDialog } from "@/components/editor/rename-project-dialog";
 import { DeleteProjectDialog } from "@/components/editor/delete-project-dialog";
 import { ShareProjectDialog } from "@/components/editor/share-project-dialog";
 import type { CanvasSaveStatus } from "@/hooks/useCanvasAutosave";
-import type { EditorStartMode } from "@/components/editor/editor-start-state";
 import {
   useProjectDialogs,
   type Project,
@@ -20,31 +19,19 @@ interface EditorWorkspaceClientProps {
   currentProject: Project;
   initialProjects: Project[];
   initialInvitations: ProjectInvitation[];
-  initialStartMode?: EditorStartMode;
-  initialStartPrompt?: string;
 }
 
 export function EditorWorkspaceClient({
   currentProject,
   initialProjects,
   initialInvitations,
-  initialStartMode = "none",
-  initialStartPrompt = "",
 }: EditorWorkspaceClientProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(true);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const [isTemplatesOpen, setIsTemplatesOpen] = useState(
-    initialStartMode === "template",
-  );
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<CanvasSaveStatus>("idle");
   const dialogs = useProjectDialogs(initialProjects, initialInvitations);
-
-  // Captured once at mount so editing the AI prompt later does not retrigger
-  // when React Strict Mode re-mounts or props re-flow.
-  const [aiInitialPrompt] = useState(
-    initialStartMode === "ai" ? initialStartPrompt : "",
-  );
 
   const projectName = useMemo(
     () =>
@@ -92,7 +79,6 @@ export function EditorWorkspaceClient({
               aiSidebarOpen={isAiSidebarOpen}
               onToggleAiSidebar={() => setIsAiSidebarOpen((open) => !open)}
               onCloseAiSidebar={() => setIsAiSidebarOpen(false)}
-              aiInitialPrompt={aiInitialPrompt}
             />
           </div>
         </div>

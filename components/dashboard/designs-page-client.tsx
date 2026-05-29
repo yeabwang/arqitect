@@ -152,7 +152,7 @@ export function DesignsPageClient({ initialProjects }: DesignsPageClientProps) {
             Architecture canvases owned by you or shared with you.
           </p>
         </div>
-        <Button onClick={() => openCreateDesign("blank")} size="sm" className="gap-1.5">
+        <Button onClick={openCreateDesign} size="sm" className="gap-1.5">
           <Plus />
           New design
         </Button>
@@ -194,7 +194,7 @@ export function DesignsPageClient({ initialProjects }: DesignsPageClientProps) {
 
       {filtered.length === 0 ? (
         <EmptyState
-          onNew={() => openCreateDesign("blank")}
+          onNew={openCreateDesign}
           hasAny={projects.length > 0}
           query={query}
         />

@@ -4,7 +4,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Phase
 
-- 00-A-onboarding-success-path complete.
+- 32-maindashbord complete.
 
 ## Current Goal
 
