@@ -2,11 +2,12 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, X } from "lucide-react";
+import { X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/brand/logo";
 import { buildRoomId, generateRoomIdSuffix } from "@/lib/project-slug";
+import { cn } from "@/lib/utils";
 import {
   type GenerationMode,
   type PendingGenerationPayload,
@@ -55,6 +56,7 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
 
   const roomId = useMemo(() => buildRoomId(name, suffix), [name, suffix]);
   const nameValid = name.trim().length > 0 && roomId.length > 0;
+  const isPrompt = path === "prompt";
 
   const choosePath = useCallback(
     (next: GenerationMode) => {
@@ -131,29 +133,20 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-bg-base">
+    <div
+      className={cn(
+        "fixed inset-0 z-50 flex flex-col bg-bg-base",
+        isPrompt ? "overflow-hidden" : "overflow-y-auto",
+      )}
+    >
       <header className="flex items-center justify-between border-b border-border-default px-6 py-4">
         <div className="flex items-center gap-3">
           <Logo href="/dashboard" />
-          {path !== null ? (
-            <>
-              <span aria-hidden className="h-4 w-px bg-border-default" />
-              <button
-                type="button"
-                onClick={backToHub}
-                disabled={isLoading}
-                className="inline-flex items-center gap-1 text-xs text-text-muted transition-colors hover:text-text-secondary disabled:opacity-50"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-                All start options
-              </button>
-            </>
-          ) : null}
         </div>
         <button
           type="button"
-          onClick={close}
-          aria-label="Close"
+          onClick={path !== null ? backToHub : close}
+          aria-label={path !== null ? "Back to start options" : "Close"}
           disabled={isLoading}
           className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border-default text-text-muted transition-colors hover:border-border-hover hover:text-text-primary disabled:opacity-50"
         >
@@ -163,6 +156,22 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
 
       {path === null ? (
         <OnboardingHub onChoose={choosePath} />
+      ) : isPrompt ? (
+        <PathPrompt
+          name={name}
+          nameValid={nameValid}
+          isLoading={isLoading}
+          createError={error}
+          phase={promptPhase}
+          onPhaseChange={setPromptPhase}
+          onNameChange={(value) => {
+            setName(value);
+            if (error) setError(null);
+          }}
+          onSubmit={(payload) =>
+            void createDesign(payload, (id) => `/editor/${id}?start=ai`)
+          }
+        />
       ) : (
         <div className="mx-auto grid w-full max-w-5xl flex-1 gap-10 px-6 py-12 lg:grid-cols-[1fr_240px]">
           <div className="flex flex-col gap-6">
@@ -189,22 +198,6 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
                     (id) =>
                       `/editor/${id}?start=template&template=${templateId}`,
                   )
-                }
-              />
-            ) : path === "prompt" ? (
-              <PathPrompt
-                name={name}
-                roomId={roomId}
-                nameValid={nameValid}
-                isLoading={isLoading}
-                phase={promptPhase}
-                onPhaseChange={setPromptPhase}
-                onNameChange={(value) => {
-                  setName(value);
-                  if (error) setError(null);
-                }}
-                onSubmit={(payload) =>
-                  void createDesign(payload, (id) => `/editor/${id}?start=ai`)
                 }
               />
             ) : (
@@ -271,9 +264,7 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
               steps={
                 path === "template"
                   ? templateSteps(templateId !== null, templateStep)
-                  : path === "prompt"
-                    ? promptSteps(promptPhase)
-                    : blankSteps(nameValid)
+                  : blankSteps(nameValid)
               }
             />
           </aside>
@@ -281,39 +272,6 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
       )}
     </div>
   );
-}
-
-function promptSteps(phase: PromptPhase): StepperStep[] {
-  const order: PromptPhase[] = ["name", "describe", "chat", "summary"];
-  const current = order.indexOf(phase);
-  const stepState = (index: number): StepperStep["state"] =>
-    index < current ? "done" : index === current ? "active" : "upcoming";
-  return [
-    {
-      id: "name",
-      title: "Name it",
-      subtitle: "Give the design a name",
-      state: stepState(0),
-    },
-    {
-      id: "describe",
-      title: "Describe",
-      subtitle: "What you're building",
-      state: stepState(1),
-    },
-    {
-      id: "clarify",
-      title: "Clarify",
-      subtitle: "A few sharp questions",
-      state: stepState(2),
-    },
-    {
-      id: "review",
-      title: "Review brief",
-      subtitle: "Approve and open canvas",
-      state: stepState(3),
-    },
-  ];
 }
 
 function blankSteps(nameValid: boolean): StepperStep[] {
