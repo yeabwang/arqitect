@@ -13,6 +13,7 @@ import type {
 import { OnboardingHub } from "./onboarding-hub";
 import { OnboardingStepper, type StepperStep } from "./onboarding-stepper";
 import { PathBlank } from "./path-blank";
+import { PathTemplate } from "./path-template";
 
 interface OnboardingFlowProps {
   initialPath: GenerationMode | null;
@@ -42,6 +43,7 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
   const [path, setPath] = useState<GenerationMode | null>(initialPath);
   const [name, setName] = useState("");
   const [suffix] = useState(() => generateRoomIdSuffix());
+  const [templateId, setTemplateId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const createdProjectIdRef = useRef<string | null>(null);
@@ -185,6 +187,23 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
                   void createDesign(null, (id) => `/editor/${id}`)
                 }
               />
+            ) : path === "template" ? (
+              <PathTemplate
+                selectedId={templateId}
+                nameValid={nameValid}
+                isLoading={isLoading}
+                onSelect={(id) => {
+                  setTemplateId(id);
+                  if (error) setError(null);
+                }}
+                onCreate={() =>
+                  void createDesign(
+                    null,
+                    (id) =>
+                      `/editor/${id}?start=template&template=${templateId}`,
+                  )
+                }
+              />
             ) : (
               <p className="text-sm text-text-muted">Coming in the next task.</p>
             )}
@@ -204,7 +223,13 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
           </div>
 
           <aside className="hidden lg:block">
-            <OnboardingStepper steps={blankSteps(nameValid)} />
+            <OnboardingStepper
+              steps={
+                path === "template"
+                  ? templateSteps(nameValid, templateId !== null)
+                  : blankSteps(nameValid)
+              }
+            />
           </aside>
         </div>
       )}
@@ -224,6 +249,29 @@ function blankSteps(nameValid: boolean): StepperStep[] {
       id: "canvas",
       title: "Open canvas",
       subtitle: "Start building",
+      state: "upcoming",
+    },
+  ];
+}
+
+function templateSteps(nameValid: boolean, picked: boolean): StepperStep[] {
+  return [
+    {
+      id: "name",
+      title: "Name your design",
+      subtitle: "Give it a short, clear name",
+      state: nameValid ? "done" : "active",
+    },
+    {
+      id: "pick",
+      title: "Choose a template",
+      subtitle: "Start from a known pattern",
+      state: picked ? "done" : nameValid ? "active" : "upcoming",
+    },
+    {
+      id: "canvas",
+      title: "Open canvas",
+      subtitle: "Adjust and build",
       state: "upcoming",
     },
   ];
