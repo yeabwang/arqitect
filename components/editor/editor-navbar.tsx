@@ -11,6 +11,7 @@ import {
   Save,
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
+import { Logo } from "@/components/brand/logo";
 import type { CanvasSaveStatus } from "@/hooks/useCanvasAutosave";
 
 interface EditorNavbarProps {
@@ -81,9 +82,7 @@ export function EditorNavbar({
         <div className="h-5 w-px bg-border-default" />
 
         <div className="min-w-0 px-1.5">
-          <p className="text-[10px] font-medium tracking-wide text-text-faint uppercase">
-            Arqitect
-          </p>
+          <Logo href="/dashboard" size="sm" wordmark={false} markClassName="text-text-secondary" />
           {projectName ? (
             <h1 className="max-w-[44vw] truncate text-sm font-semibold text-text-primary md:max-w-[360px]">
               {projectName}

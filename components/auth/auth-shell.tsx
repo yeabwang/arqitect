@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
+import { Logo } from "@/components/brand/logo";
 
 interface AuthShellProps {
   children: ReactNode;
@@ -10,18 +11,7 @@ export function AuthShell({ children }: AuthShellProps) {
   return (
     <div className="relative flex min-h-screen flex-col bg-bg-base">
       <header className="flex items-center justify-between px-6 py-5 sm:px-10 sm:py-6">
-        <Link
-          href="/"
-          className="flex items-center gap-2 font-mono text-sm font-semibold tracking-tight text-text-primary"
-        >
-          <span
-            aria-hidden="true"
-            className="inline-flex h-6 w-6 items-center justify-center rounded-sm bg-text-primary font-mono text-[11px] font-bold leading-none text-bg-base"
-          >
-            A
-          </span>
-          ARQITECT.
-        </Link>
+        <Logo href="/" />
         <Link
           href="/"
           className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-text-muted transition-colors hover:text-text-primary"

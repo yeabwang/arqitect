@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import { Logo } from "@/components/brand/logo";
 import { buildRoomId, generateRoomIdSuffix } from "@/lib/project-slug";
 import {
   INTERVIEW_FIELDS,
@@ -177,9 +178,7 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-bg-base">
       <header className="flex items-center justify-between border-b border-border-default px-6 py-4">
-        <span className="font-mono text-sm font-semibold tracking-tight text-text-primary">
-          Arqitect
-        </span>
+        <Logo href="/dashboard" />
         <button
           type="button"
           onClick={close}

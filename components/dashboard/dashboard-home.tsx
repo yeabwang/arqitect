@@ -7,7 +7,7 @@ import {
   DesignsSummary,
   type DesignsSummaryItem,
 } from "@/components/dashboard/designs-summary";
-import { QuickActions } from "@/components/dashboard/quick-actions";
+import { AnalyticsCards } from "@/components/dashboard/analytics-cards";
 import { EmptyDashboard } from "@/components/dashboard/empty-dashboard";
 import { PendingInvitationsStrip } from "@/components/dashboard/pending-invitations-strip";
 import type { ProjectInvitation } from "@/lib/project-invitations";
@@ -28,6 +28,7 @@ export function DashboardHome(props: DashboardHomeProps) {
   const {
     greeting,
     totalDesigns,
+    totalSpecs,
     totalCollaborators,
     totalAiRuns,
     continueWith,
@@ -68,7 +69,12 @@ export function DashboardHome(props: DashboardHomeProps) {
       ) : (
         <>
           {continueWith ? <ContinueWorking project={continueWith} /> : null}
-          <QuickActions />
+          <AnalyticsCards
+            totalDesigns={totalDesigns}
+            totalSpecs={totalSpecs}
+            totalAiRuns={totalAiRuns}
+            totalCollaborators={totalCollaborators}
+          />
           <section className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
             <DesignsSummary items={designs} />
             <ActivityFeed items={activity} />
