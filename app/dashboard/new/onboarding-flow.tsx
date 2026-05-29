@@ -6,13 +6,20 @@ import { X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { buildRoomId, generateRoomIdSuffix } from "@/lib/project-slug";
-import type {
-  GenerationMode,
-  PendingGenerationPayload,
+import {
+  INTERVIEW_FIELDS,
+  INTERVIEW_FIELD_META,
+  PROMPT_STEPS,
+  deriveOpenQuestions,
+  emptyInterviewAnswers,
+  type GenerationMode,
+  type InterviewAnswers,
+  type PendingGenerationPayload,
 } from "@/types/onboarding";
 import { OnboardingHub } from "./onboarding-hub";
 import { OnboardingStepper, type StepperStep } from "./onboarding-stepper";
 import { PathBlank } from "./path-blank";
+import { PathPrompt, type PromptStyle } from "./path-prompt";
 import { PathTemplate } from "./path-template";
 
 interface OnboardingFlowProps {
@@ -48,8 +55,17 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
   const [error, setError] = useState<string | null>(null);
   const createdProjectIdRef = useRef<string | null>(null);
 
+  const [answers, setAnswers] = useState<InterviewAnswers>(
+    emptyInterviewAnswers,
+  );
+  const [stepIndex, setStepIndex] = useState(0);
+  const [promptStyle, setPromptStyle] = useState<PromptStyle>("interview");
+  const [freePrompt, setFreePrompt] = useState("");
+
   const roomId = useMemo(() => buildRoomId(name, suffix), [name, suffix]);
   const nameValid = name.trim().length > 0 && roomId.length > 0;
+
+  const goalAnswered = answers.systemGoal.trim().length > 0;
 
   const choosePath = useCallback(
     (next: GenerationMode) => {
@@ -120,6 +136,43 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
     },
     [isLoading, name, nameValid, roomId, router],
   );
+
+  const submitPrompt = useCallback(() => {
+    if (promptStyle === "free-form") {
+      const trimmed = freePrompt.trim();
+      if (trimmed.length === 0) {
+        setError("Add a prompt, or switch back to the guided questions.");
+        return;
+      }
+      const payload: PendingGenerationPayload = {
+        kind: "free-form",
+        prompt: trimmed,
+        openQuestions: INTERVIEW_FIELDS.filter(
+          (field) => !INTERVIEW_FIELD_META[field].required,
+        ).map((field) => INTERVIEW_FIELD_META[field].openQuestion),
+      };
+      void createDesign(payload, (id) => `/editor/${id}?start=ai`);
+      return;
+    }
+
+    if (answers.systemGoal.trim().length === 0) {
+      setError("A system goal is required before we can draft anything.");
+      setStepIndex(0);
+      return;
+    }
+
+    const trimmedAnswers = INTERVIEW_FIELDS.reduce((acc, field) => {
+      acc[field] = answers[field].trim();
+      return acc;
+    }, {} as InterviewAnswers);
+
+    const payload: PendingGenerationPayload = {
+      kind: "interview",
+      answers: trimmedAnswers,
+      openQuestions: deriveOpenQuestions(trimmedAnswers),
+    };
+    void createDesign(payload, (id) => `/editor/${id}?start=ai`);
+  }, [answers, createDesign, freePrompt, promptStyle]);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-bg-base">
@@ -205,7 +258,37 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
                 }
               />
             ) : (
-              <p className="text-sm text-text-muted">Coming in the next task.</p>
+              <PathPrompt
+                answers={answers}
+                stepIndex={stepIndex}
+                promptStyle={promptStyle}
+                freePrompt={freePrompt}
+                nameValid={nameValid}
+                isLoading={isLoading}
+                goalAnswered={goalAnswered}
+                onAnswerChange={(field, value) => {
+                  setAnswers((prev) => ({ ...prev, [field]: value }));
+                  if (error) setError(null);
+                }}
+                onStepChange={(index) =>
+                  setStepIndex(
+                    Math.min(Math.max(index, 0), PROMPT_STEPS.length - 1),
+                  )
+                }
+                onFreePromptChange={(value) => {
+                  setFreePrompt(value);
+                  if (error) setError(null);
+                }}
+                onUseFreeForm={() => {
+                  setPromptStyle("free-form");
+                  setError(null);
+                }}
+                onUseInterview={() => {
+                  setPromptStyle("interview");
+                  setError(null);
+                }}
+                onSubmit={submitPrompt}
+              />
             )}
 
             {error ? (
@@ -227,12 +310,80 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
               steps={
                 path === "template"
                   ? templateSteps(nameValid, templateId !== null)
-                  : blankSteps(nameValid)
+                  : path === "prompt"
+                    ? promptSteps(answers, stepIndex, promptStyle, setStepIndex)
+                    : blankSteps(nameValid)
+              }
+              footer={
+                path === "prompt" && promptStyle === "interview" ? (
+                  <ConfidenceMeter answers={answers} />
+                ) : null
               }
             />
           </aside>
         </div>
       )}
+    </div>
+  );
+}
+
+function promptSteps(
+  answers: InterviewAnswers,
+  stepIndex: number,
+  promptStyle: PromptStyle,
+  onJump: (index: number) => void,
+): StepperStep[] {
+  if (promptStyle === "free-form") {
+    return [
+      {
+        id: "free",
+        title: "Free-form prompt",
+        subtitle: "Describe it your way",
+        state: "active" as const,
+      },
+    ];
+  }
+  return PROMPT_STEPS.map(
+    (step, index): StepperStep => ({
+      id: step.id,
+      title: step.title,
+      subtitle: step.subtitle,
+      state:
+        index < stepIndex
+          ? ("done" as const)
+          : index === stepIndex
+            ? ("active" as const)
+            : ("upcoming" as const),
+      onJump: () => onJump(index),
+    }),
+  );
+}
+
+function ConfidenceMeter({ answers }: { answers: InterviewAnswers }) {
+  const recommended = INTERVIEW_FIELDS.filter(
+    (field) => !INTERVIEW_FIELD_META[field].required,
+  );
+  const answered = recommended.filter(
+    (field) => answers[field].trim().length > 0,
+  ).length;
+  const pct = Math.round((answered / recommended.length) * 100);
+  return (
+    <div className="flex flex-col gap-1.5 rounded-xl border border-border-faint bg-bg-elevated/40 p-3">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[10px] tracking-[0.14em] text-text-muted uppercase">
+          Confidence
+        </span>
+        <span className="font-mono text-[10px] text-text-secondary">{pct}%</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-bg-base">
+        <div
+          className="h-full rounded-full bg-accent-primary transition-[width] duration-300"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="text-[11px] text-text-faint">
+        Unanswered fields become open questions on the draft.
+      </p>
     </div>
   );
 }
