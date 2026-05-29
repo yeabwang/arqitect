@@ -8,19 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/brand/logo";
 import { buildRoomId, generateRoomIdSuffix } from "@/lib/project-slug";
 import {
-  INTERVIEW_FIELDS,
-  INTERVIEW_FIELD_META,
-  PROMPT_STEPS,
-  deriveOpenQuestions,
-  emptyInterviewAnswers,
   type GenerationMode,
-  type InterviewAnswers,
   type PendingGenerationPayload,
 } from "@/types/onboarding";
 import { OnboardingHub } from "./onboarding-hub";
 import { OnboardingStepper, type StepperStep } from "./onboarding-stepper";
 import { PathBlank } from "./path-blank";
-import { PathPrompt, type PromptStyle } from "./path-prompt";
+import { PathPrompt, type PromptPhase } from "./path-prompt";
 import { PathTemplate } from "./path-template";
 
 interface OnboardingFlowProps {
@@ -54,26 +48,19 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
   const [suffix] = useState(() => generateRoomIdSuffix());
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [templateStep, setTemplateStep] = useState<1 | 2>(1);
+  const [promptPhase, setPromptPhase] = useState<PromptPhase>("name");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const createdProjectIdRef = useRef<string | null>(null);
 
-  const [answers, setAnswers] = useState<InterviewAnswers>(
-    emptyInterviewAnswers,
-  );
-  const [stepIndex, setStepIndex] = useState(0);
-  const [promptStyle, setPromptStyle] = useState<PromptStyle>("interview");
-  const [freePrompt, setFreePrompt] = useState("");
-
   const roomId = useMemo(() => buildRoomId(name, suffix), [name, suffix]);
   const nameValid = name.trim().length > 0 && roomId.length > 0;
-
-  const goalAnswered = answers.systemGoal.trim().length > 0;
 
   const choosePath = useCallback(
     (next: GenerationMode) => {
       setPath(next);
       setTemplateStep(1);
+      setPromptPhase("name");
       setError(null);
       window.history.replaceState(null, "", `/dashboard/new?path=${next}`);
     },
@@ -83,6 +70,7 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
   const backToHub = useCallback(() => {
     setPath(null);
     setTemplateStep(1);
+    setPromptPhase("name");
     setError(null);
     window.history.replaceState(null, "", "/dashboard/new");
   }, []);
@@ -141,43 +129,6 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
     },
     [isLoading, name, nameValid, roomId, router],
   );
-
-  const submitPrompt = useCallback(() => {
-    if (promptStyle === "free-form") {
-      const trimmed = freePrompt.trim();
-      if (trimmed.length === 0) {
-        setError("Add a prompt, or switch back to the guided questions.");
-        return;
-      }
-      const payload: PendingGenerationPayload = {
-        kind: "free-form",
-        prompt: trimmed,
-        openQuestions: INTERVIEW_FIELDS.filter(
-          (field) => !INTERVIEW_FIELD_META[field].required,
-        ).map((field) => INTERVIEW_FIELD_META[field].openQuestion),
-      };
-      void createDesign(payload, (id) => `/editor/${id}?start=ai`);
-      return;
-    }
-
-    if (answers.systemGoal.trim().length === 0) {
-      setError("A system goal is required before we can draft anything.");
-      setStepIndex(0);
-      return;
-    }
-
-    const trimmedAnswers = INTERVIEW_FIELDS.reduce((acc, field) => {
-      acc[field] = answers[field].trim();
-      return acc;
-    }, {} as InterviewAnswers);
-
-    const payload: PendingGenerationPayload = {
-      kind: "interview",
-      answers: trimmedAnswers,
-      openQuestions: deriveOpenQuestions(trimmedAnswers),
-    };
-    void createDesign(payload, (id) => `/editor/${id}?start=ai`);
-  }, [answers, createDesign, freePrompt, promptStyle]);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-bg-base">
@@ -240,14 +191,30 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
                   )
                 }
               />
+            ) : path === "prompt" ? (
+              <PathPrompt
+                name={name}
+                roomId={roomId}
+                nameValid={nameValid}
+                isLoading={isLoading}
+                phase={promptPhase}
+                onPhaseChange={setPromptPhase}
+                onNameChange={(value) => {
+                  setName(value);
+                  if (error) setError(null);
+                }}
+                onSubmit={(payload) =>
+                  void createDesign(payload, (id) => `/editor/${id}?start=ai`)
+                }
+              />
             ) : (
               <>
                 <div className="flex flex-col gap-1">
                   <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
-                    {PATH_COPY[path].title}
+                    {PATH_COPY.blank.title}
                   </h1>
                   <p className="text-sm text-text-secondary">
-                    {PATH_COPY[path].subtitle}
+                    {PATH_COPY.blank.subtitle}
                   </p>
                 </div>
 
@@ -278,47 +245,13 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
                   ) : null}
                 </div>
 
-                {path === "blank" ? (
-                  <PathBlank
-                    nameValid={nameValid}
-                    isLoading={isLoading}
-                    onCreate={() =>
-                      void createDesign(null, (id) => `/editor/${id}`)
-                    }
-                  />
-                ) : (
-                  <PathPrompt
-                answers={answers}
-                stepIndex={stepIndex}
-                promptStyle={promptStyle}
-                freePrompt={freePrompt}
-                nameValid={nameValid}
-                isLoading={isLoading}
-                goalAnswered={goalAnswered}
-                onAnswerChange={(field, value) => {
-                  setAnswers((prev) => ({ ...prev, [field]: value }));
-                  if (error) setError(null);
-                }}
-                onStepChange={(index) =>
-                  setStepIndex(
-                    Math.min(Math.max(index, 0), PROMPT_STEPS.length - 1),
-                  )
-                }
-                onFreePromptChange={(value) => {
-                  setFreePrompt(value);
-                  if (error) setError(null);
-                }}
-                onUseFreeForm={() => {
-                  setPromptStyle("free-form");
-                  setError(null);
-                }}
-                onUseInterview={() => {
-                  setPromptStyle("interview");
-                  setError(null);
-                }}
-                    onSubmit={submitPrompt}
-                  />
-                )}
+                <PathBlank
+                  nameValid={nameValid}
+                  isLoading={isLoading}
+                  onCreate={() =>
+                    void createDesign(null, (id) => `/editor/${id}`)
+                  }
+                />
               </>
             )}
 
@@ -333,7 +266,7 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
                 path === "template"
                   ? templateSteps(templateId !== null, templateStep)
                   : path === "prompt"
-                    ? promptSteps(answers, stepIndex, promptStyle, setStepIndex)
+                    ? promptSteps(promptPhase)
                     : blankSteps(nameValid)
               }
             />
@@ -344,36 +277,37 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
   );
 }
 
-function promptSteps(
-  answers: InterviewAnswers,
-  stepIndex: number,
-  promptStyle: PromptStyle,
-  onJump: (index: number) => void,
-): StepperStep[] {
-  if (promptStyle === "free-form") {
-    return [
-      {
-        id: "free",
-        title: "Free-form prompt",
-        subtitle: "Describe it your way",
-        state: "active" as const,
-      },
-    ];
-  }
-  return PROMPT_STEPS.map(
-    (step, index): StepperStep => ({
-      id: step.id,
-      title: step.title,
-      subtitle: step.subtitle,
-      state:
-        index < stepIndex
-          ? ("done" as const)
-          : index === stepIndex
-            ? ("active" as const)
-            : ("upcoming" as const),
-      onJump: () => onJump(index),
-    }),
-  );
+function promptSteps(phase: PromptPhase): StepperStep[] {
+  const order: PromptPhase[] = ["name", "describe", "chat", "summary"];
+  const current = order.indexOf(phase);
+  const stepState = (index: number): StepperStep["state"] =>
+    index < current ? "done" : index === current ? "active" : "upcoming";
+  return [
+    {
+      id: "name",
+      title: "Name it",
+      subtitle: "Give the design a name",
+      state: stepState(0),
+    },
+    {
+      id: "describe",
+      title: "Describe",
+      subtitle: "What you're building",
+      state: stepState(1),
+    },
+    {
+      id: "clarify",
+      title: "Clarify",
+      subtitle: "A few sharp questions",
+      state: stepState(2),
+    },
+    {
+      id: "review",
+      title: "Review brief",
+      subtitle: "Approve and open canvas",
+      state: stepState(3),
+    },
+  ];
 }
 
 function blankSteps(nameValid: boolean): StepperStep[] {
