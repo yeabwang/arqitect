@@ -48,7 +48,6 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
   const [name, setName] = useState("");
   const [suffix] = useState(() => generateRoomIdSuffix());
   const [templateId, setTemplateId] = useState<string | null>(null);
-  const [templateStep, setTemplateStep] = useState<1 | 2>(1);
   const [promptPhase, setPromptPhase] = useState<PromptPhase>("name");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,11 +56,14 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
   const roomId = useMemo(() => buildRoomId(name, suffix), [name, suffix]);
   const nameValid = name.trim().length > 0 && roomId.length > 0;
   const isPrompt = path === "prompt";
+  const isTemplate = path === "template";
+  // Prompt and template render their own full-height surface; only the blank
+  // path uses the shared centered grid + stepper rail.
+  const isFullScreen = isPrompt || isTemplate;
 
   const choosePath = useCallback(
     (next: GenerationMode) => {
       setPath(next);
-      setTemplateStep(1);
       setPromptPhase("name");
       setError(null);
       window.history.replaceState(null, "", `/dashboard/new?path=${next}`);
@@ -71,7 +73,6 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
 
   const backToHub = useCallback(() => {
     setPath(null);
-    setTemplateStep(1);
     setPromptPhase("name");
     setError(null);
     window.history.replaceState(null, "", "/dashboard/new");
@@ -136,7 +137,7 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
     <div
       className={cn(
         "fixed inset-0 z-50 flex flex-col bg-bg-base",
-        isPrompt ? "overflow-hidden" : "overflow-y-auto",
+        isFullScreen ? "overflow-hidden" : "overflow-y-auto",
       )}
     >
       <header className="flex items-center justify-between border-b border-border-default px-6 py-4">
@@ -172,87 +173,79 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
             void createDesign(payload, (id) => `/editor/${id}?start=ai`)
           }
         />
+      ) : isTemplate ? (
+        <PathTemplate
+          name={name}
+          roomId={roomId}
+          nameValid={nameValid}
+          selectedId={templateId}
+          isLoading={isLoading}
+          createError={error}
+          onNameChange={(value) => {
+            setName(value);
+            if (error) setError(null);
+          }}
+          onSelect={(id) => {
+            setTemplateId(id);
+            if (error) setError(null);
+          }}
+          onCreate={() =>
+            void createDesign(
+              null,
+              (id) => `/editor/${id}?start=template&template=${templateId}`,
+            )
+          }
+        />
       ) : (
         <div className="mx-auto grid w-full max-w-5xl flex-1 gap-10 px-6 py-12 lg:grid-cols-[1fr_240px]">
           <div className="flex flex-col gap-6">
-            {path === "template" ? (
-              <PathTemplate
-                name={name}
-                roomId={roomId}
-                nameValid={nameValid}
-                step={templateStep}
-                selectedId={templateId}
-                isLoading={isLoading}
-                onNameChange={(value) => {
-                  setName(value);
+            <div className="flex flex-col gap-1">
+              <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
+                {PATH_COPY.blank.title}
+              </h1>
+              <p className="text-sm text-text-secondary">
+                {PATH_COPY.blank.subtitle}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="design-name"
+                className="font-mono text-[10px] tracking-[0.18em] text-text-muted uppercase"
+              >
+                Design name
+              </label>
+              <Input
+                id="design-name"
+                autoFocus
+                placeholder="e.g. Billing service"
+                value={name}
+                onChange={(event) => {
+                  setName(event.target.value);
                   if (error) setError(null);
                 }}
-                onStepChange={setTemplateStep}
-                onSelect={(id) => {
-                  setTemplateId(id);
-                  if (error) setError(null);
-                }}
-                onCreate={() =>
-                  void createDesign(
-                    null,
-                    (id) =>
-                      `/editor/${id}?start=template&template=${templateId}`,
-                  )
-                }
-              />
-            ) : (
-              <>
-                <div className="flex flex-col gap-1">
-                  <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
-                    {PATH_COPY.blank.title}
-                  </h1>
-                  <p className="text-sm text-text-secondary">
-                    {PATH_COPY.blank.subtitle}
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="design-name"
-                    className="font-mono text-[10px] tracking-[0.18em] text-text-muted uppercase"
-                  >
-                    Design name
-                  </label>
-                  <Input
-                    id="design-name"
-                    autoFocus
-                    placeholder="e.g. Billing service"
-                    value={name}
-                    onChange={(event) => {
-                      setName(event.target.value);
-                      if (error) setError(null);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" && nameValid && !isLoading) {
-                        event.preventDefault();
-                        void createDesign(null, (id) => `/editor/${id}`);
-                      }
-                    }}
-                  />
-                  {roomId ? (
-                    <p className="text-xs text-text-muted">
-                      Room ID:{" "}
-                      <span className="font-mono text-text-secondary">
-                        {roomId}
-                      </span>
-                    </p>
-                  ) : null}
-                </div>
-
-                <PathBlank
-                  nameValid={nameValid}
-                  isLoading={isLoading}
-                  onCreate={() =>
-                    void createDesign(null, (id) => `/editor/${id}`)
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && nameValid && !isLoading) {
+                    event.preventDefault();
+                    void createDesign(null, (id) => `/editor/${id}`);
                   }
-                />
-              </>
-            )}
+                }}
+              />
+              {roomId ? (
+                <p className="text-xs text-text-muted">
+                  Room ID:{" "}
+                  <span className="font-mono text-text-secondary">
+                    {roomId}
+                  </span>
+                </p>
+              ) : null}
+            </div>
+
+            <PathBlank
+              nameValid={nameValid}
+              isLoading={isLoading}
+              onCreate={() => void createDesign(null, (id) => `/editor/${id}`)}
+            />
 
             {error ? (
               <p className="text-xs text-state-error">{error}</p>
@@ -260,13 +253,7 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
           </div>
 
           <aside className="hidden lg:block">
-            <OnboardingStepper
-              steps={
-                path === "template"
-                  ? templateSteps(templateId !== null, templateStep)
-                  : blankSteps(nameValid)
-              }
-            />
+            <OnboardingStepper steps={blankSteps(nameValid)} />
           </aside>
         </div>
       )}
@@ -291,25 +278,3 @@ function blankSteps(nameValid: boolean): StepperStep[] {
   ];
 }
 
-function templateSteps(picked: boolean, step: 1 | 2): StepperStep[] {
-  return [
-    {
-      id: "name",
-      title: "Name your design",
-      subtitle: "Give it a short, clear name",
-      state: step === 1 ? "active" : "done",
-    },
-    {
-      id: "pick",
-      title: "Choose a template",
-      subtitle: "Start from a known pattern",
-      state: step === 2 ? (picked ? "done" : "active") : "upcoming",
-    },
-    {
-      id: "canvas",
-      title: "Open canvas",
-      subtitle: "Adjust and build",
-      state: "upcoming",
-    },
-  ];
-}
