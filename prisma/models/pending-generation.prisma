@@ -1,0 +1,11 @@
+model PendingGeneration {
+  id        String   @id @default(cuid())
+  projectId String   @unique
+  payload   Json
+  rawPrompt String?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+}

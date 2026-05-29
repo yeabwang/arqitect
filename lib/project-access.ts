@@ -4,6 +4,8 @@ import getPrisma from "@/lib/prisma";
 export interface ProjectAccessIdentity {
   userId: string | null;
   primaryEmail: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
 }
 
 export interface ProjectAccessRecord {
@@ -11,19 +13,92 @@ export interface ProjectAccessRecord {
   collaborators: Array<{ email: string }>;
 }
 
-export async function getCurrentProjectIdentity(): Promise<ProjectAccessIdentity> {
-  const { userId } = await auth();
+interface ClerkUserSummary {
+  firstName?: string | null;
+  fullName?: string | null;
+  username?: string | null;
+  imageUrl?: string | null;
+  primaryEmailAddress?: { emailAddress?: string | null } | null;
+}
 
-  if (!userId) {
-    return { userId: null, primaryEmail: null };
+interface ProjectIdentityInput {
+  userId: string | null;
+  sessionClaims?: unknown;
+  user?: ClerkUserSummary | null;
+}
+
+function readClaim(claims: unknown, key: string): string | null {
+  if (!claims || typeof claims !== "object") {
+    return null;
   }
 
-  const user = await currentUser();
+  const value = (claims as Record<string, unknown>)[key];
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : null;
+}
+
+function readFirstClaim(claims: unknown, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = readClaim(claims, key);
+    if (value) {
+      return value;
+    }
+  }
+  return null;
+}
+
+function emailName(email: string | null): string | null {
+  return email?.split("@")[0] || null;
+}
+
+export function resolveProjectIdentity({
+  userId,
+  sessionClaims,
+  user,
+}: ProjectIdentityInput): ProjectAccessIdentity {
+  const primaryEmail =
+    user?.primaryEmailAddress?.emailAddress ??
+    readFirstClaim(sessionClaims, [
+      "email",
+      "email_address",
+      "primary_email_address",
+    ]);
+
+  const firstName = readFirstClaim(sessionClaims, ["first_name", "given_name"]);
+  const lastName = readFirstClaim(sessionClaims, ["last_name", "family_name"]);
+  const claimFullName = [firstName, lastName].filter(Boolean).join(" ");
+
+  const displayName =
+    user?.firstName ??
+    user?.fullName ??
+    user?.username ??
+    readFirstClaim(sessionClaims, ["name", "username"]) ??
+    (claimFullName.length > 0 ? claimFullName : null) ??
+    emailName(primaryEmail);
 
   return {
     userId,
-    primaryEmail: user?.primaryEmailAddress?.emailAddress ?? null,
+    primaryEmail,
+    displayName,
+    avatarUrl: user?.imageUrl ?? null,
   };
+}
+
+export async function getCurrentProjectIdentity(): Promise<ProjectAccessIdentity> {
+  const { userId, sessionClaims } = await auth();
+
+  if (!userId) {
+    return resolveProjectIdentity({ userId: null });
+  }
+
+  const user = await currentUser().catch(() => null);
+
+  return resolveProjectIdentity({
+    userId,
+    sessionClaims,
+    user,
+  });
 }
 
 export function hasProjectAccess(

@@ -9,7 +9,6 @@ import {
 } from "@/components/dashboard/designs-summary";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { EmptyDashboard } from "@/components/dashboard/empty-dashboard";
-import { GetStartedPanel } from "@/components/dashboard/get-started-panel";
 import { PendingInvitationsStrip } from "@/components/dashboard/pending-invitations-strip";
 import type { ProjectInvitation } from "@/lib/project-invitations";
 
@@ -29,14 +28,15 @@ export function DashboardHome(props: DashboardHomeProps) {
   const {
     greeting,
     totalDesigns,
-    totalSpecs,
-    totalAiRuns,
     totalCollaborators,
+    totalAiRuns,
     continueWith,
     designs,
     activity,
     invitations,
   } = props;
+
+  const isEmpty = totalDesigns === 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -49,38 +49,32 @@ export function DashboardHome(props: DashboardHomeProps) {
             {greeting}
           </h1>
         </div>
-        <p className="font-mono text-[11px] tracking-[0.14em] text-text-muted uppercase">
-          {totalDesigns} design{totalDesigns === 1 ? "" : "s"} ·{" "}
-          {totalCollaborators} collaborator
-          {totalCollaborators === 1 ? "" : "s"} · {totalAiRuns} AI run
-          {totalAiRuns === 1 ? "" : "s"}
-        </p>
+        {!isEmpty ? (
+          <p className="font-mono text-[11px] tracking-[0.14em] text-text-muted uppercase">
+            {totalDesigns} design{totalDesigns === 1 ? "" : "s"} ·{" "}
+            {totalCollaborators} collaborator
+            {totalCollaborators === 1 ? "" : "s"} · {totalAiRuns} AI run
+            {totalAiRuns === 1 ? "" : "s"}
+          </p>
+        ) : null}
       </header>
 
       {invitations.length > 0 ? (
         <PendingInvitationsStrip initial={invitations} />
       ) : null}
 
-      {continueWith ? (
-        <ContinueWorking project={continueWith} />
-      ) : (
+      {isEmpty ? (
         <EmptyDashboard />
+      ) : (
+        <>
+          {continueWith ? <ContinueWorking project={continueWith} /> : null}
+          <QuickActions />
+          <section className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+            <DesignsSummary items={designs} />
+            <ActivityFeed items={activity} />
+          </section>
+        </>
       )}
-
-      <QuickActions />
-
-      {totalDesigns === 0 ? (
-        <GetStartedPanel
-          totalDesigns={totalDesigns}
-          totalSpecs={totalSpecs}
-          totalAiRuns={totalAiRuns}
-        />
-      ) : null}
-
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <DesignsSummary items={designs} />
-        <ActivityFeed items={activity} />
-      </section>
     </div>
   );
 }

@@ -3,15 +3,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { PrismaClient } from "@/app/generated/prisma/client";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { parse as parseDotenv } from "dotenv";
-import type { Pool } from "pg";
-
-interface CachedPool {
-  url: string;
-  pool: Pool;
-}
+import type { PoolConfig } from "pg";
 
 interface CachedPrismaClient {
   url: string;
+  cacheKey: string;
   client: Promise<PrismaClient>;
 }
 
@@ -23,8 +19,25 @@ interface PrismaEnvironment {
 
 type LocalDatabaseUrlReader = () => string | undefined;
 
-let cachedPool: CachedPool | undefined;
 let cachedClient: CachedPrismaClient | undefined;
+
+const PRISMA_POSTGRES_HOST_SUFFIX = "db.prisma.io";
+const PRISMA_POSTGRES_POOL_MAX = 1;
+const POSTGRES_CONNECTION_TIMEOUT_MS = 10_000;
+const POSTGRES_IDLE_TIMEOUT_MS = 5_000;
+const PRISMA_READ_RETRY_ATTEMPTS = 3;
+const PRISMA_READ_RETRY_BASE_DELAY_MS = 150;
+
+const RETRYABLE_PRISMA_READ_OPERATIONS = new Set([
+  "findUnique",
+  "findUniqueOrThrow",
+  "findFirst",
+  "findFirstOrThrow",
+  "findMany",
+  "count",
+  "aggregate",
+  "groupBy",
+]);
 
 const globalForPrisma = globalThis as unknown as {
   prisma: CachedPrismaClient | undefined;
@@ -36,6 +49,7 @@ const REQUIRED_PRISMA_DELEGATES = [
   "projectInvitation",
   "taskRun",
   "projectSpec",
+  "pendingGeneration",
 ] as const;
 
 export function hasRequiredPrismaDelegates(
@@ -77,10 +91,158 @@ export function resolvePrismaDatabaseUrl(
   return url;
 }
 
+function isPrismaPostgresDirectUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname;
+    return (
+      hostname === PRISMA_POSTGRES_HOST_SUFFIX ||
+      hostname.endsWith(`.${PRISMA_POSTGRES_HOST_SUFFIX}`)
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function createPgPoolConfig(url: string): PoolConfig {
+  const config: PoolConfig = {
+    connectionString: url,
+    connectionTimeoutMillis: POSTGRES_CONNECTION_TIMEOUT_MS,
+    idleTimeoutMillis: POSTGRES_IDLE_TIMEOUT_MS,
+  };
+
+  if (isPrismaPostgresDirectUrl(url)) {
+    // Prisma Postgres direct endpoints terminate extra concurrent direct
+    // connections; serialize Prisma reads through a single pg pool slot.
+    config.max = PRISMA_POSTGRES_POOL_MAX;
+  }
+
+  return config;
+}
+
+export function isRetryablePrismaReadOperation(operation: string): boolean {
+  return RETRYABLE_PRISMA_READ_OPERATIONS.has(operation);
+}
+
+export function isPrismaTransientConnectionError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const message = (error as { message?: unknown }).message;
+  const isTransientMessage =
+    typeof message === "string" &&
+    (message.includes("Connection terminated unexpectedly") ||
+      message.includes("Connection terminated due to connection timeout") ||
+      message.includes("Connection closed"));
+
+  if (isTransientMessage) {
+    return true;
+  }
+
+  return isPrismaTransientConnectionError(
+    (error as { cause?: unknown }).cause
+  );
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function retryPrismaRead<T>(
+  query: () => Promise<T>,
+  wait: (ms: number) => Promise<void> = delay
+): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < PRISMA_READ_RETRY_ATTEMPTS; attempt += 1) {
+    try {
+      return await query();
+    } catch (error) {
+      lastError = error;
+      if (
+        !isPrismaTransientConnectionError(error) ||
+        attempt === PRISMA_READ_RETRY_ATTEMPTS - 1
+      ) {
+        throw error;
+      }
+
+      await wait(PRISMA_READ_RETRY_BASE_DELAY_MS * (attempt + 1));
+    }
+  }
+
+  throw lastError;
+}
+
+function createPrismaCacheKey(url: string): string {
+  if (url.startsWith("prisma+postgres://") || url.startsWith("prisma://")) {
+    return `${url}|accelerate`;
+  }
+
+  const config = createPgPoolConfig(url);
+  return [
+    url,
+    "pg-adapter=owned-config",
+    `pg-read-retry=${PRISMA_READ_RETRY_ATTEMPTS}`,
+    `pg-max=${config.max ?? "default"}`,
+    `pg-connection-timeout=${config.connectionTimeoutMillis ?? "default"}`,
+    `pg-idle-timeout=${config.idleTimeoutMillis ?? "default"}`,
+  ].join("|");
+}
+
 async function disconnectPrismaClient(client: PrismaClient): Promise<void> {
   await client.$disconnect().catch(() => {
     // Best-effort cleanup for stale dev clients after schema regeneration.
   });
+}
+
+async function createDirectPrismaClient(url: string): Promise<PrismaClient> {
+  const { PrismaPg } = await import("@prisma/adapter-pg");
+  const adapter = new PrismaPg(createPgPoolConfig(url));
+
+  return new PrismaClient({ adapter });
+}
+
+function prismaDelegateName(model: string): string {
+  return `${model.charAt(0).toLowerCase()}${model.slice(1)}`;
+}
+
+async function executeModelRead(
+  client: PrismaClient,
+  model: string,
+  operation: string,
+  args: unknown
+): Promise<unknown> {
+  const delegate = (client as unknown as Record<string, unknown>)[
+    prismaDelegateName(model)
+  ];
+
+  if (!delegate || typeof delegate !== "object") {
+    throw new Error(`Unknown Prisma model: ${model}`);
+  }
+
+  const operationFn = (delegate as Record<string, unknown>)[operation];
+  if (typeof operationFn !== "function") {
+    throw new Error(`Unknown Prisma read operation: ${model}.${operation}`);
+  }
+
+  return (operationFn as (this: unknown, args: unknown) => Promise<unknown>).call(
+    delegate,
+    args
+  );
+}
+
+async function executeReadWithFreshClient(
+  url: string,
+  model: string,
+  operation: string,
+  args: unknown
+): Promise<unknown> {
+  const client = await createDirectPrismaClient(url);
+  try {
+    return await executeModelRead(client, model, operation, args);
+  } finally {
+    await disconnectPrismaClient(client);
+  }
 }
 
 async function createPrismaClient(url: string): Promise<PrismaClient> {
@@ -90,20 +252,36 @@ async function createPrismaClient(url: string): Promise<PrismaClient> {
     ) as unknown as PrismaClient;
   }
 
-  const { PrismaPg } = await import("@prisma/adapter-pg");
-  const { Pool } = await import("pg");
+  const client = await createDirectPrismaClient(url);
 
-  if (!cachedPool || cachedPool.url !== url) {
-    if (cachedPool) {
-      await cachedPool.pool.end().catch(() => {
-        // Best-effort cleanup when the local database URL changes in dev.
-      });
-    }
-    cachedPool = { url, pool: new Pool({ connectionString: url }) };
-  }
-  const adapter = new PrismaPg(cachedPool.pool);
+  return client.$extends({
+    query: {
+      $allModels: {
+        async $allOperations({ model, operation, args, query }) {
+          if (!isRetryablePrismaReadOperation(String(operation))) {
+            return query(args);
+          }
 
-  return new PrismaClient({ adapter });
+          try {
+            return await query(args);
+          } catch (error) {
+            if (!isPrismaTransientConnectionError(error)) {
+              throw error;
+            }
+
+            return retryPrismaRead(() =>
+              executeReadWithFreshClient(
+                url,
+                String(model),
+                String(operation),
+                args
+              )
+            );
+          }
+        },
+      },
+    },
+  }) as unknown as PrismaClient;
 }
 
 async function createCompatiblePrismaClient(
@@ -127,6 +305,7 @@ function createCachedPrismaClient(
 ): CachedPrismaClient {
   const entry: CachedPrismaClient = {
     url,
+    cacheKey: createPrismaCacheKey(url),
     client: createCompatiblePrismaClient(url).catch((err) => {
       replaceCached(undefined);
       throw err;
@@ -141,7 +320,7 @@ async function getCompatibleCachedClient(
   url: string,
   replaceCached: (next: CachedPrismaClient | undefined) => void
 ): Promise<PrismaClient> {
-  if (cached.url !== url) {
+  if (cached.url !== url || cached.cacheKey !== createPrismaCacheKey(url)) {
     const previousClient = await cached.client.catch(() => undefined);
     if (previousClient) {
       await disconnectPrismaClient(previousClient);

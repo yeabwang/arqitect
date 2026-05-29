@@ -1,27 +1,16 @@
-enum ProjectStatus {
-  DRAFT
-  ARCHIVED
-}
-
-enum ProjectInvitationStatus {
-  PENDING
-  ACCEPTED
-  DENIED
-}
-
 model Project {
-  id             String                @id @default(cuid())
-  ownerId        String
-  name           String
-  description    String?
-  status         ProjectStatus         @default(DRAFT)
-  canvasJsonPath String?
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
-
-  collaborators  ProjectCollaborator[]
-  invitations    ProjectInvitation[]
-  specs          ProjectSpec[]
+  id                String                @id @default(cuid())
+  ownerId           String
+  name              String
+  description       String?
+  status            ProjectStatus         @default(DRAFT)
+  canvasJsonPath    String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  pendingGeneration PendingGeneration?
+  collaborators     ProjectCollaborator[]
+  invitations       ProjectInvitation[]
+  specs             ProjectSpec[]
 
   @@index([ownerId])
   @@index([createdAt])
@@ -32,8 +21,7 @@ model ProjectCollaborator {
   projectId String
   email     String   @db.Citext
   createdAt DateTime @default(now())
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, email])
   @@index([email])
@@ -48,11 +36,21 @@ model ProjectInvitation {
   status      ProjectInvitationStatus @default(PENDING)
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, email])
   @@index([email, status])
   @@index([projectId, status, createdAt])
   @@index([invitedById, status])
+}
+
+enum ProjectStatus {
+  DRAFT
+  ARCHIVED
+}
+
+enum ProjectInvitationStatus {
+  PENDING
+  ACCEPTED
+  DENIED
 }

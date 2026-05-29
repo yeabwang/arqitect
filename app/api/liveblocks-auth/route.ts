@@ -1,4 +1,3 @@
-import { currentUser } from "@clerk/nextjs/server";
 import { LiveblocksError } from "@liveblocks/node";
 import {
   getCurrentProjectIdentity,
@@ -45,14 +44,11 @@ export async function POST(request: Request) {
     return new Response("Forbidden", { status: 403 });
   }
 
-  const user = await currentUser();
   const name =
-    user?.fullName ??
-    user?.username ??
-    user?.primaryEmailAddress?.emailAddress ??
+    identity.displayName ??
     identity.primaryEmail ??
     "Collaborator";
-  const avatarUrl = user?.imageUrl ?? "";
+  const avatarUrl = identity.avatarUrl ?? "";
   const cursorColor = getCursorColor(identity.userId);
   const liveblocks = getLiveblocksClient();
 

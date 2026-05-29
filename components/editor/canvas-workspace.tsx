@@ -38,6 +38,7 @@ import {
 } from "@xyflow/react";
 import { AiPresenceLayer } from "@/components/editor/ai-presence-layer";
 import { AiSidebar } from "@/components/editor/ai-sidebar";
+import type { PendingGenerationClient } from "@/components/editor/editor-workspace-client";
 import { CanvasControls } from "@/components/editor/canvas-controls";
 import { CanvasEdge as CanvasEdgeRenderer } from "@/components/editor/canvas-edge";
 import { CanvasNode as CanvasNodeRenderer } from "@/components/editor/canvas-node";
@@ -46,6 +47,7 @@ import { PresenceAvatars } from "@/components/editor/presence-avatars";
 import { PresenceCursors } from "@/components/editor/presence-cursors";
 import { StarterTemplatesModal } from "@/components/editor/starter-templates-modal";
 import {
+  CANVAS_TEMPLATES,
   instantiateTemplate,
   type CanvasTemplate,
 } from "@/components/editor/starter-templates";
@@ -104,10 +106,12 @@ interface CanvasWorkspaceProps {
   projectId: string;
   templatesOpen: boolean;
   onTemplatesOpenChange: (open: boolean) => void;
+  templateId?: string | null;
   onSaveStatusChange?: (status: CanvasSaveStatus) => void;
   aiSidebarOpen: boolean;
   onToggleAiSidebar: () => void;
   onCloseAiSidebar: () => void;
+  pendingGeneration?: PendingGenerationClient | null;
 }
 
 interface CollaborativeCanvasProps {
@@ -115,10 +119,12 @@ interface CollaborativeCanvasProps {
   projectId: string;
   templatesOpen: boolean;
   onTemplatesOpenChange: (open: boolean) => void;
+  templateId?: string | null;
   onSaveStatusChange?: (status: CanvasSaveStatus) => void;
   aiSidebarOpen: boolean;
   onToggleAiSidebar: () => void;
   onCloseAiSidebar: () => void;
+  pendingGeneration?: PendingGenerationClient | null;
 }
 
 interface CanvasErrorBoundaryState {
@@ -168,10 +174,12 @@ function CollaborativeCanvas({
   projectId,
   templatesOpen,
   onTemplatesOpenChange,
+  templateId,
   onSaveStatusChange,
   aiSidebarOpen,
   onToggleAiSidebar,
   onCloseAiSidebar,
+  pendingGeneration,
 }: CollaborativeCanvasProps) {
   const { nodes, edges, onNodesChange, onEdgesChange, onDelete } =
     useLiveblocksFlow<CanvasNode, CanvasEdge>({
@@ -186,6 +194,7 @@ function CollaborativeCanvas({
   // One-time load of the saved canvas blob into the Liveblocks room. Skipped if
   // the room already has nodes/edges so live collaboration is never clobbered.
   const hasAttemptedLoadRef = useRef(false);
+  const canvasHadContentAtLoadRef = useRef(false);
   const [isCanvasLoaded, setIsCanvasLoaded] = useState(false);
   useEffect(() => {
     if (hasAttemptedLoadRef.current) {
@@ -197,6 +206,7 @@ function CollaborativeCanvas({
     const currentNodes = reactFlow.getNodes();
     const currentEdges = reactFlow.getEdges();
     if (currentNodes.length > 0 || currentEdges.length > 0) {
+      canvasHadContentAtLoadRef.current = true;
       queueMicrotask(() => {
         if (!cancelled) {
           setIsCanvasLoaded(true);
@@ -225,10 +235,14 @@ function CollaborativeCanvas({
         const liveNodes = reactFlow.getNodes();
         const liveEdges = reactFlow.getEdges();
         if (liveNodes.length > 0 || liveEdges.length > 0) {
+          canvasHadContentAtLoadRef.current = true;
           return;
         }
         const savedNodes = Array.isArray(data.nodes) ? data.nodes : [];
         const savedEdges = Array.isArray(data.edges) ? data.edges : [];
+        if (savedNodes.length > 0 || savedEdges.length > 0) {
+          canvasHadContentAtLoadRef.current = true;
+        }
         if (savedNodes.length > 0) {
           onNodesChange(
             savedNodes.map((item) => ({ type: "add" as const, item })),
@@ -442,6 +456,29 @@ function CollaborativeCanvas({
     [onEdgesChange, onNodesChange, reactFlow],
   );
 
+  // Auto-import a template chosen during onboarding (?template=<id>). Runs once,
+  // after the saved-canvas load settled and only while the room is still empty.
+  const hasAutoImportedRef = useRef(false);
+  useEffect(() => {
+    if (hasAutoImportedRef.current || !templateId || !isCanvasLoaded) {
+      return;
+    }
+
+    hasAutoImportedRef.current = true;
+    if (
+      canvasHadContentAtLoadRef.current ||
+      reactFlow.getNodes().length > 0 ||
+      reactFlow.getEdges().length > 0
+    ) {
+      return;
+    }
+
+    const template = CANVAS_TEMPLATES.find((item) => item.id === templateId);
+    if (template) {
+      handleImportTemplate(template);
+    }
+  }, [templateId, isCanvasLoaded, handleImportTemplate, reactFlow]);
+
   useKeyboardShortcuts({
     reactFlow,
     onUndo: undo,
@@ -594,6 +631,7 @@ function CollaborativeCanvas({
         onClose={onCloseAiSidebar}
         projectId={projectId}
         roomId={roomId}
+        pendingGeneration={pendingGeneration}
       />
     </div>
   );
@@ -604,10 +642,12 @@ export function CanvasWorkspace({
   projectId,
   templatesOpen,
   onTemplatesOpenChange,
+  templateId,
   onSaveStatusChange,
   aiSidebarOpen,
   onToggleAiSidebar,
   onCloseAiSidebar,
+  pendingGeneration,
 }: CanvasWorkspaceProps) {
   return (
     <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
@@ -624,10 +664,12 @@ export function CanvasWorkspace({
                   projectId={projectId}
                   templatesOpen={templatesOpen}
                   onTemplatesOpenChange={onTemplatesOpenChange}
+                  templateId={templateId}
                   onSaveStatusChange={onSaveStatusChange}
                   aiSidebarOpen={aiSidebarOpen}
                   onToggleAiSidebar={onToggleAiSidebar}
                   onCloseAiSidebar={onCloseAiSidebar}
+                  pendingGeneration={pendingGeneration}
                 />
               </ReactFlowProvider>
             )}

@@ -99,7 +99,7 @@ export function DashboardSidebar() {
 
       <div className="px-3 py-3">
         <Button
-          onClick={openCreateDesign}
+          onClick={() => openCreateDesign()}
           className="w-full justify-center gap-1.5"
           size="sm"
         >

@@ -6,15 +6,34 @@ import {
 } from "@/lib/project-access";
 import { fetchUserInvitations } from "@/lib/project-invitations";
 import { AccessDenied } from "@/components/editor/access-denied";
-import { EditorWorkspaceClient } from "@/components/editor/editor-workspace-client";
+import { CANVAS_TEMPLATES } from "@/components/editor/starter-templates";
+import {
+  EditorWorkspaceClient,
+  type EditorStartMode,
+  type PendingGenerationClient,
+} from "@/components/editor/editor-workspace-client";
 import type { Project } from "@/hooks/use-project-dialogs";
+import { parsePendingGenerationPayload } from "@/types/onboarding";
 
 interface EditorWorkspacePageProps {
   params: Promise<{ roomId: string }>;
+  searchParams: Promise<{ start?: string; template?: string }>;
+}
+
+function resolveStartMode(start: string | undefined): EditorStartMode {
+  if (start === "template" || start === "ai") {
+    return start;
+  }
+  return null;
+}
+
+function hasExpired(date: Date): boolean {
+  return date.getTime() <= Date.now();
 }
 
 export default async function EditorWorkspacePage({
   params,
+  searchParams,
 }: EditorWorkspacePageProps) {
   const identity = await getCurrentProjectIdentity();
 
@@ -23,6 +42,15 @@ export default async function EditorWorkspacePage({
   }
 
   const { roomId } = await params;
+  const { start, template } = await searchParams;
+  const startMode = resolveStartMode(start);
+  const templateId =
+    startMode === "template" &&
+    template &&
+    CANVAS_TEMPLATES.some((item) => item.id === template)
+      ? template
+      : null;
+
   const currentProject = await getProjectWithAccess(roomId, identity);
 
   if (!currentProject) {
@@ -50,6 +78,21 @@ export default async function EditorWorkspacePage({
   }));
   const initialInvitations = await fetchUserInvitations(identity.primaryEmail);
 
+  // Only the AI start path reads a captured interview; the row is deleted once
+  // the user confirms generation in the editor.
+  let pendingGeneration: PendingGenerationClient | null = null;
+  if (startMode === "ai") {
+    const pending = await prisma.pendingGeneration.findUnique({
+      where: { projectId: currentProject.id },
+    });
+    if (pending && !hasExpired(pending.expiresAt)) {
+      const payload = parsePendingGenerationPayload(pending.payload);
+      if (payload) {
+        pendingGeneration = { payload, rawPrompt: pending.rawPrompt };
+      }
+    }
+  }
+
   return (
     <EditorWorkspaceClient
       currentProject={{
@@ -59,6 +102,9 @@ export default async function EditorWorkspacePage({
       }}
       initialProjects={initialProjects}
       initialInvitations={initialInvitations}
+      startMode={startMode}
+      templateId={templateId}
+      pendingGeneration={pendingGeneration}
     />
   );
 }

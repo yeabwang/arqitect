@@ -31,6 +31,7 @@
 * Spec versions and handoff brief records, each referencing the canvas snapshot, decision log state, and conversation cursor at the moment of generation.
 * Canvas snapshot pointers — each snapshot is a row in Postgres referencing a versioned blob path, with the latest pointer tracked per project.
 * Task run records for all Trigger.dev jobs.
+* Pending generation rows — a scoped, per-project row (`PendingGeneration`, unique on `projectId`) holding the guided pre-generation interview payload (or a skipped free-form prompt) between the start-design dialog and the editor. It is durable relational metadata, not a Liveblocks transient; it is replaced if re-entered, deleted once the user confirms generation in the editor, and expires 24h after creation.
 
 #### Vercel Blob (immutable generated artifacts)
 

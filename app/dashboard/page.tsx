@@ -1,9 +1,13 @@
-import { currentUser, clerkClient } from "@clerk/nextjs/server";
-import getPrisma from "@/lib/prisma";
-import { getCurrentProjectIdentity } from "@/lib/project-access";
+import { clerkClient } from "@clerk/nextjs/server";
+import getPrisma, { isPrismaTransientConnectionError } from "@/lib/prisma";
+import {
+  getCurrentProjectIdentity,
+  type ProjectAccessIdentity,
+} from "@/lib/project-access";
 import { normalizeCollaboratorEmail } from "@/lib/project-collaborators";
 import { fetchUserInvitations } from "@/lib/project-invitations";
 import { DashboardHome } from "@/components/dashboard/dashboard-home";
+import { DashboardLoadError } from "@/components/dashboard/dashboard-load-error";
 import type { ContinueWorkingProject } from "@/components/dashboard/continue-working";
 import type { DesignsSummaryItem } from "@/components/dashboard/designs-summary";
 import type { ActivityItem } from "@/components/dashboard/activity-feed";
@@ -17,6 +21,19 @@ function fourteenDaysAgo(): Date {
 
 export default async function DashboardHomePage() {
   const identity = await getCurrentProjectIdentity();
+  if (!identity.userId) return null;
+
+  try {
+    return await renderDashboardHome(identity);
+  } catch (error) {
+    if (isPrismaTransientConnectionError(error)) {
+      return <DashboardLoadError />;
+    }
+    throw error;
+  }
+}
+
+async function renderDashboardHome(identity: ProjectAccessIdentity) {
   if (!identity.userId) return null;
 
   const prisma = await getPrisma();
@@ -213,9 +230,8 @@ export default async function DashboardHomePage() {
 
   const invitations = await fetchUserInvitations(identity.primaryEmail);
 
-  const user = await currentUser();
-  const greeting = user?.firstName
-    ? `Welcome back, ${user.firstName}.`
+  const greeting = identity.displayName
+    ? `Welcome back, ${identity.displayName}.`
     : "Welcome back.";
 
   return (

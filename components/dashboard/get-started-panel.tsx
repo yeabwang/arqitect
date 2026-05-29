@@ -68,7 +68,7 @@ export function GetStartedPanel({
       done: totalDesigns > 0,
       action: (
         <button
-          onClick={openCreateDesign}
+          onClick={() => openCreateDesign()}
           className="font-mono text-[11px] tracking-[0.12em] text-text-secondary uppercase hover:text-text-primary"
         >
           Start <ArrowRight className="inline h-3 w-3" />
