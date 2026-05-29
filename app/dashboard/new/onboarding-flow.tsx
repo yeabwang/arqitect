@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/brand/logo";
@@ -33,15 +33,16 @@ const PATH_COPY: Record<
 > = {
   blank: {
     title: "Start from a blank canvas",
-    subtitle: "Name it, then jump straight into the editor.",
+    subtitle: "Name your design and open an empty system canvas.",
   },
   template: {
-    title: "Start from a template",
-    subtitle: "Name it and pick a pattern to begin from.",
+    title: "Start from a proven pattern",
+    subtitle: "Name your design, then adapt an architecture that already works.",
   },
   prompt: {
     title: "Describe your system",
-    subtitle: "A few focused questions so Arqitect drafts something real.",
+    subtitle:
+      "Tell Arqitect what you're building. It drafts the first architecture — and the spec you'll hand off from it.",
   },
 };
 
@@ -52,6 +53,7 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
   const [name, setName] = useState("");
   const [suffix] = useState(() => generateRoomIdSuffix());
   const [templateId, setTemplateId] = useState<string | null>(null);
+  const [templateStep, setTemplateStep] = useState<1 | 2>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const createdProjectIdRef = useRef<string | null>(null);
@@ -71,6 +73,7 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
   const choosePath = useCallback(
     (next: GenerationMode) => {
       setPath(next);
+      setTemplateStep(1);
       setError(null);
       window.history.replaceState(null, "", `/dashboard/new?path=${next}`);
     },
@@ -79,6 +82,7 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
 
   const backToHub = useCallback(() => {
     setPath(null);
+    setTemplateStep(1);
     setError(null);
     window.history.replaceState(null, "", "/dashboard/new");
   }, []);
@@ -178,7 +182,23 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-bg-base">
       <header className="flex items-center justify-between border-b border-border-default px-6 py-4">
-        <Logo href="/dashboard" />
+        <div className="flex items-center gap-3">
+          <Logo href="/dashboard" />
+          {path !== null ? (
+            <>
+              <span aria-hidden className="h-4 w-px bg-border-default" />
+              <button
+                type="button"
+                onClick={backToHub}
+                disabled={isLoading}
+                className="inline-flex items-center gap-1 text-xs text-text-muted transition-colors hover:text-text-secondary disabled:opacity-50"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                All start options
+              </button>
+            </>
+          ) : null}
+        </div>
         <button
           type="button"
           onClick={close}
@@ -195,55 +215,19 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
       ) : (
         <div className="mx-auto grid w-full max-w-5xl flex-1 gap-10 px-6 py-12 lg:grid-cols-[1fr_240px]">
           <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-1">
-              <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
-                {PATH_COPY[path].title}
-              </h1>
-              <p className="text-sm text-text-secondary">
-                {PATH_COPY[path].subtitle}
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="design-name"
-                className="font-mono text-[10px] tracking-[0.18em] text-text-muted uppercase"
-              >
-                Design name
-              </label>
-              <Input
-                id="design-name"
-                autoFocus
-                placeholder="e.g. Billing service"
-                value={name}
-                onChange={(event) => {
-                  setName(event.target.value);
+            {path === "template" ? (
+              <PathTemplate
+                name={name}
+                roomId={roomId}
+                nameValid={nameValid}
+                step={templateStep}
+                selectedId={templateId}
+                isLoading={isLoading}
+                onNameChange={(value) => {
+                  setName(value);
                   if (error) setError(null);
                 }}
-              />
-              {roomId ? (
-                <p className="text-xs text-text-muted">
-                  Room ID:{" "}
-                  <span className="font-mono text-text-secondary">
-                    {roomId}
-                  </span>
-                </p>
-              ) : null}
-            </div>
-
-            {path === "blank" ? (
-              <PathBlank
-                nameValid={nameValid}
-                isLoading={isLoading}
-                onCreate={() =>
-                  void createDesign(null, (id) => `/editor/${id}`)
-                }
-              />
-            ) : path === "template" ? (
-              <PathTemplate
-                selectedId={templateId}
-                nameValid={nameValid}
-                isLoading={isLoading}
+                onStepChange={setTemplateStep}
                 onSelect={(id) => {
                   setTemplateId(id);
                   if (error) setError(null);
@@ -257,7 +241,53 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
                 }
               />
             ) : (
-              <PathPrompt
+              <>
+                <div className="flex flex-col gap-1">
+                  <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
+                    {PATH_COPY[path].title}
+                  </h1>
+                  <p className="text-sm text-text-secondary">
+                    {PATH_COPY[path].subtitle}
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor="design-name"
+                    className="font-mono text-[10px] tracking-[0.18em] text-text-muted uppercase"
+                  >
+                    Design name
+                  </label>
+                  <Input
+                    id="design-name"
+                    autoFocus
+                    placeholder="e.g. Billing service"
+                    value={name}
+                    onChange={(event) => {
+                      setName(event.target.value);
+                      if (error) setError(null);
+                    }}
+                  />
+                  {roomId ? (
+                    <p className="text-xs text-text-muted">
+                      Room ID:{" "}
+                      <span className="font-mono text-text-secondary">
+                        {roomId}
+                      </span>
+                    </p>
+                  ) : null}
+                </div>
+
+                {path === "blank" ? (
+                  <PathBlank
+                    nameValid={nameValid}
+                    isLoading={isLoading}
+                    onCreate={() =>
+                      void createDesign(null, (id) => `/editor/${id}`)
+                    }
+                  />
+                ) : (
+                  <PathPrompt
                 answers={answers}
                 stepIndex={stepIndex}
                 promptStyle={promptStyle}
@@ -286,37 +316,25 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
                   setPromptStyle("interview");
                   setError(null);
                 }}
-                onSubmit={submitPrompt}
-              />
+                    onSubmit={submitPrompt}
+                  />
+                )}
+              </>
             )}
 
             {error ? (
               <p className="text-xs text-state-error">{error}</p>
             ) : null}
-
-            <button
-              type="button"
-              onClick={backToHub}
-              disabled={isLoading}
-              className="self-start text-xs text-text-muted underline-offset-4 transition-colors hover:text-text-secondary hover:underline disabled:opacity-50"
-            >
-              ← Back to start
-            </button>
           </div>
 
           <aside className="hidden lg:block">
             <OnboardingStepper
               steps={
                 path === "template"
-                  ? templateSteps(nameValid, templateId !== null)
+                  ? templateSteps(templateId !== null, templateStep)
                   : path === "prompt"
                     ? promptSteps(answers, stepIndex, promptStyle, setStepIndex)
                     : blankSteps(nameValid)
-              }
-              footer={
-                path === "prompt" && promptStyle === "interview" ? (
-                  <ConfidenceMeter answers={answers} />
-                ) : null
               }
             />
           </aside>
@@ -358,35 +376,6 @@ function promptSteps(
   );
 }
 
-function ConfidenceMeter({ answers }: { answers: InterviewAnswers }) {
-  const recommended = INTERVIEW_FIELDS.filter(
-    (field) => !INTERVIEW_FIELD_META[field].required,
-  );
-  const answered = recommended.filter(
-    (field) => answers[field].trim().length > 0,
-  ).length;
-  const pct = Math.round((answered / recommended.length) * 100);
-  return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-border-faint bg-bg-elevated/40 p-3">
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] tracking-[0.14em] text-text-muted uppercase">
-          Confidence
-        </span>
-        <span className="font-mono text-[10px] text-text-secondary">{pct}%</span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-bg-base">
-        <div
-          className="h-full rounded-full bg-accent-primary transition-[width] duration-300"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <p className="text-[11px] text-text-faint">
-        Unanswered fields become open questions on the draft.
-      </p>
-    </div>
-  );
-}
-
 function blankSteps(nameValid: boolean): StepperStep[] {
   return [
     {
@@ -404,19 +393,19 @@ function blankSteps(nameValid: boolean): StepperStep[] {
   ];
 }
 
-function templateSteps(nameValid: boolean, picked: boolean): StepperStep[] {
+function templateSteps(picked: boolean, step: 1 | 2): StepperStep[] {
   return [
     {
       id: "name",
       title: "Name your design",
       subtitle: "Give it a short, clear name",
-      state: nameValid ? "done" : "active",
+      state: step === 1 ? "active" : "done",
     },
     {
       id: "pick",
       title: "Choose a template",
       subtitle: "Start from a known pattern",
-      state: picked ? "done" : nameValid ? "active" : "upcoming",
+      state: step === 2 ? (picked ? "done" : "active") : "upcoming",
     },
     {
       id: "canvas",
