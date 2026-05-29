@@ -54,15 +54,16 @@ rigid boring form. The middle: intentional, quiet motion that signals state, nev
 
 ```
 app/dashboard/new/
-  page.tsx            -- server component: auth gate, passes template list to client
-  onboarding-flow.tsx -- client shell: path state, name, create + navigation logic
-  path-selector.tsx   -- 3-segment path switcher
-  blank-path.tsx      -- blank body
-  template-path.tsx   -- template gallery body (reuses TemplatePreview SVG)
-  prompt-path.tsx     -- goal-first stepper body
+  page.tsx              -- server component: auth gate, reads ?path, renders client shell
+  onboarding-flow.tsx   -- client shell: hub/path state, name, create + navigation logic
+  onboarding-hub.tsx    -- hub view: 3 large choice cards with inline SVG previews
+  onboarding-stepper.tsx-- right-rail vertical numbered stepper (+ prompt confidence meter)
+  path-blank.tsx        -- blank body
+  path-template.tsx     -- template gallery body (reuses exported TemplatePreview SVG)
+  path-prompt.tsx       -- goal-first stepper body
 ```
 
-`page.tsx` reads `?path=blank|template|prompt` (default `blank`) for the initial segment.
+`page.tsx` reads `?path=blank|template|prompt`; an absent/invalid value shows the hub.
 The list of templates is `CANVAS_TEMPLATES` from `components/editor/starter-templates.ts`
 (static; can be referenced directly on the client, so the server page mainly enforces auth and
 renders the client shell).
@@ -84,20 +85,40 @@ keep working without prop churn. The dialog state (`createOpen`, `createMode`, `
 
 ### Consistent shell (`onboarding-flow.tsx`)
 
-Full-viewport `bg-bg-base`, centered max-width column. Same chrome for all three paths:
+Full-viewport `fixed inset-0 z-50 bg-bg-base` overlay. (The route lives under
+`app/dashboard/layout.tsx`, which renders the `DashboardShell` sidebar/header chrome around all
+children; a full-screen overlay is how the onboarding surface takes over the viewport without
+fighting that layout.) Same top chrome for all states:
 
 - **Top bar:** Arqitect mark (left); `X` close (right) → `router.push("/dashboard")`.
-- **Path switcher:** three segments (Blank · Template · Prompt). Switching updates the URL
-  `?path=` (shallow) and the body; the entered name persists across switches. This is the
-  personalization / self-identification moment.
-- **Name field:** always visible. Live Room ID preview via `buildRoomId(name, suffix)`.
-  Suffix minted once on mount (`generateRoomIdSuffix`).
-- **Footer:** primary action + contextual secondary (back/skip). The prompt path adds a
-  progress/confidence meter here.
 
-State owned by the shell: `path`, `name`, `suffix`, `isLoading`, `error`,
+The shell renders one of two views, modeled on the Better Auth reference flow:
+
+**Hub view** (no/invalid `?path`): a centered intro — eyebrow + headline ("Design a system you
+can build from") + one-line subhead — above three large choice cards (Blank · Template ·
+Prompt). Each card carries a small inline SVG preview (empty dotted canvas / mini diagram /
+prompt-and-spec mock), a label, a one-line description, and a CTA affordance; the Prompt card
+gets the `accent-primary` treatment. Choosing a card sets the path (and updates `?path=` via
+`history.replaceState`) and switches to the path view.
+
+**Path view** (after a path is chosen): a two-column layout —
+- **Left column** (scrollable): header (path title + subtitle), the always-visible **name
+  field** with live Room ID preview via `buildRoomId(name, suffix)` (suffix minted once on
+  mount with `generateRoomIdSuffix`), the path body, and a footer with the primary action +
+  contextual secondary (`Back to start` → hub; per-path skip/free-form).
+- **Right rail** (`onboarding-stepper.tsx`): a vertical numbered stepper showing progress.
+  Each step renders a number that becomes a check (✓) when satisfied, a title, and a subtitle;
+  the active step gets a ring. Steps adapt per path:
+  - Blank: `Name your design` → `Open canvas`.
+  - Template: `Name your design` → `Choose a template` → `Open canvas`.
+  - Prompt: `Goal` → `People & flows` → `Data & integrations` → `Runtime, scale & limits`,
+    with a **confidence meter** beneath the rail that fills as recommended fields are answered.
+    Prompt steps are clickable to jump.
+
+State owned by the shell: `path` (`null` = hub), `name`, `suffix`, `isLoading`, `error`,
 `createdProjectIdRef` (retry-safe, same pattern as today). The create + navigate logic is
-lifted from the current dialog largely unchanged.
+lifted from the current dialog largely unchanged and exposed to path bodies as a single
+`createDesign(payload, destination)` helper.
 
 ### Path bodies
 
@@ -203,13 +224,15 @@ Dashboard entry tile
 **New**
 - `app/dashboard/new/page.tsx`
 - `app/dashboard/new/onboarding-flow.tsx`
-- `app/dashboard/new/path-selector.tsx`
-- `app/dashboard/new/blank-path.tsx`
-- `app/dashboard/new/template-path.tsx`
-- `app/dashboard/new/prompt-path.tsx`
+- `app/dashboard/new/onboarding-hub.tsx`
+- `app/dashboard/new/onboarding-stepper.tsx`
+- `app/dashboard/new/path-blank.tsx`
+- `app/dashboard/new/path-template.tsx`
+- `app/dashboard/new/path-prompt.tsx`
 
 **Edited**
 - `types/onboarding.ts` (add `PROMPT_STEPS`)
+- `components/editor/starter-templates-modal.tsx` (export `TemplatePreview` for gallery reuse)
 - `components/dashboard/dashboard-context.tsx` (`openCreateDesign` → router push)
 - `components/dashboard/dashboard-shell.tsx` (drop dialog state + mount)
 - `components/dashboard/quick-actions.tsx`, `empty-dashboard.tsx`, `get-started-panel.tsx`,
