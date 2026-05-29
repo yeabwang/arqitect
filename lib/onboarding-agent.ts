@@ -46,6 +46,7 @@ THIS TURN — produce the single next move in the conversation. Return these fie
 - recommendation: when you have a clear steer, a brief first-person recommendation or observation that guides the builder ("I'd lean toward an event queue here so the checkout path stays fast."). One or two sentences. Empty string if you have nothing worth recommending yet.
 - question: EXACTLY ONE question. Never bundle multiple asks, never present a list, never use "and" to smuggle in a second question. Keep it under ~25 words, plain language, no jargon dumps.
 - options: when the question is a bounded decision, 2–4 short, concrete, feasible choices the builder can pick from (e.g. ["Synchronous at checkout", "Authorize now, capture async", "Not sure — recommend one"]). Each option a few words. Empty array when the question is genuinely open-ended.
+- multiSelect: set true ONLY when the question legitimately allows more than one answer — e.g. "Which of these will you integrate with?" or "Which platforms do you need to support?" — so the options behave as checkboxes the builder can tick several of. Set false for either/or decisions where exactly one choice makes sense, and false whenever options is empty.
 - rationale: one short clause on why this question matters now — shown subtly so the builder sees you are deliberate.
 
 Rules:

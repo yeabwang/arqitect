@@ -37,6 +37,11 @@ const turnResultSchema = z.object({
     .describe(
       "2-4 short feasible choices for a bounded decision; empty array when open-ended",
     ),
+  multiSelect: z
+    .boolean()
+    .describe(
+      "true when the builder may legitimately pick more than one option; false for single-pick or open-ended",
+    ),
   rationale: z
     .string()
     .describe("one short clause on why this matters; empty string when done"),
@@ -53,7 +58,7 @@ const summaryResultSchema = z.object({
     .describe("material unknowns that were not resolved in the conversation"),
 });
 
-const TURN_JSON_CONTRACT = `\n\nRespond with ONLY a single JSON object — no markdown, no code fences, no commentary — with exactly these keys: {"done": boolean, "recommendation": string, "question": string, "options": string[], "rationale": string}. Use empty string "" or empty array [] where a field does not apply.`;
+const TURN_JSON_CONTRACT = `\n\nRespond with ONLY a single JSON object — no markdown, no code fences, no commentary — with exactly these keys: {"done": boolean, "recommendation": string, "question": string, "options": string[], "multiSelect": boolean, "rationale": string}. Use empty string "" or empty array [] where a field does not apply; set multiSelect to false when it does not apply.`;
 
 const SUMMARY_JSON_CONTRACT = `\n\nRespond with ONLY a single JSON object — no markdown, no code fences, no commentary — with exactly these keys: {"summary": string, "openQuestions": string[]}.`;
 
@@ -144,13 +149,15 @@ export async function POST(request: NextRequest) {
       });
       const object = turnResultSchema.parse(extractJson(text));
       const done = object.done || transcript.length >= config.maxQuestions;
+      const options = done
+        ? []
+        : object.options.map((o) => o.trim()).filter((o) => o.length > 0);
       return Response.json({
         done,
         recommendation: done ? "" : object.recommendation.trim(),
         question: done ? "" : object.question.trim(),
-        options: done
-          ? []
-          : object.options.map((o) => o.trim()).filter((o) => o.length > 0),
+        options,
+        multiSelect: options.length > 0 ? object.multiSelect : false,
         rationale: done ? "" : object.rationale.trim(),
       });
     }

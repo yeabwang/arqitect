@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowRight,
+  Check,
   Loader2,
   RefreshCw,
   SendHorizontal,
@@ -41,6 +42,7 @@ interface TurnResponse {
   recommendation: string;
   question: string;
   options: string[];
+  multiSelect: boolean;
   rationale: string;
 }
 
@@ -87,6 +89,8 @@ export function PathPrompt({
   const [question, setQuestion] = useState<string | null>(null);
   const [recommendation, setRecommendation] = useState<string | null>(null);
   const [options, setOptions] = useState<string[]>([]);
+  const [multiSelect, setMultiSelect] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [rationale, setRationale] = useState<string | null>(null);
   const [summary, setSummary] = useState("");
   const [openQuestions, setOpenQuestions] = useState<string[]>([]);
@@ -119,6 +123,8 @@ export function PathPrompt({
     setQuestion(null);
     setRecommendation(null);
     setOptions([]);
+    setMultiSelect(false);
+    setSelectedOptions([]);
     setRationale(null);
   }, []);
 
@@ -163,6 +169,8 @@ export function PathPrompt({
         setQuestion(result.question);
         setRecommendation(result.recommendation || null);
         setOptions(result.options ?? []);
+        setMultiSelect(Boolean(result.multiSelect) && (result.options?.length ?? 0) > 0);
+        setSelectedOptions([]);
         setRationale(result.rationale || null);
       } catch {
         setAgentError(
@@ -226,6 +234,40 @@ export function PathPrompt({
     [question, agentBusy, transcript, description, runTurn, clearTurn],
   );
 
+  const toggleOption = useCallback(
+    (option: string) => {
+      if (agentBusy) return;
+      setSelectedOptions((prev) =>
+        prev.includes(option)
+          ? prev.filter((o) => o !== option)
+          : [...prev, option],
+      );
+    },
+    [agentBusy],
+  );
+
+  const confirmSelection = useCallback(() => {
+    if (!question || agentBusy || selectedOptions.length === 0) return;
+    // Preserve the option order as presented, not click order.
+    const answer = options
+      .filter((o) => selectedOptions.includes(o))
+      .join(", ");
+    const next = [...transcript, { question, answer }];
+    setTranscript(next);
+    setInput("");
+    clearTurn();
+    void runTurn(description, next);
+  }, [
+    question,
+    agentBusy,
+    selectedOptions,
+    options,
+    transcript,
+    description,
+    runTurn,
+    clearTurn,
+  ]);
+
   const skip = useCallback(() => {
     if (!question || agentBusy) return;
     const next = [...transcript, { question, answer: "" }];
@@ -266,7 +308,9 @@ export function PathPrompt({
       : phase === "describe"
         ? "Describe what you're building…"
         : options.length > 0
-          ? "Pick one above, or type your answer…"
+          ? multiSelect
+            ? "Select all that apply above, or type your answer…"
+            : "Pick one above, or type your answer…"
           : "Type your answer…";
 
   const sendDisabled = input.trim().length === 0 || agentBusy || isLoading;
@@ -481,23 +525,75 @@ export function PathPrompt({
           ) : (
             <>
               {phase === "chat" && options.length > 0 && !agentBusy ? (
-                <div
-                  role="group"
-                  aria-label="Suggested answers"
-                  onKeyDown={onChipKeyDown.handleKeyDown}
-                  className="flex flex-wrap gap-2"
-                >
-                  {options.map((option, index) => (
-                    <button
-                      key={option}
-                      type="button"
-                      {...onChipKeyDown.getItemProps(index)}
-                      onClick={() => pickOption(option)}
-                      className="rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-xs text-text-secondary transition-colors hover:border-accent-primary/50 hover:text-text-primary focus-visible:border-accent-primary/60 focus-visible:text-text-primary focus-visible:outline-none"
-                    >
-                      {option}
-                    </button>
-                  ))}
+                <div className="flex flex-col gap-2">
+                  <div
+                    role="group"
+                    aria-label={
+                      multiSelect
+                        ? "Suggested answers — select all that apply"
+                        : "Suggested answers"
+                    }
+                    onKeyDown={onChipKeyDown.handleKeyDown}
+                    className="flex flex-wrap gap-2"
+                  >
+                    {options.map((option, index) => {
+                      const checked =
+                        multiSelect && selectedOptions.includes(option);
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          role={multiSelect ? "checkbox" : undefined}
+                          aria-checked={multiSelect ? checked : undefined}
+                          {...onChipKeyDown.getItemProps(index)}
+                          onClick={() =>
+                            multiSelect
+                              ? toggleOption(option)
+                              : pickOption(option)
+                          }
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs transition-colors focus-visible:outline-none",
+                            checked
+                              ? "border-accent-primary/60 bg-accent-primary-dim text-text-primary"
+                              : "border-border-default bg-bg-surface text-text-secondary hover:border-accent-primary/50 hover:text-text-primary focus-visible:border-accent-primary/60 focus-visible:text-text-primary",
+                          )}
+                        >
+                          {multiSelect ? (
+                            <span
+                              aria-hidden
+                              className={cn(
+                                "inline-flex h-3.5 w-3.5 items-center justify-center rounded-[5px] border transition-colors",
+                                checked
+                                  ? "border-accent-primary bg-accent-primary text-bg-base"
+                                  : "border-border-hover",
+                              )}
+                            >
+                              {checked ? <Check className="h-2.5 w-2.5" /> : null}
+                            </span>
+                          ) : null}
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {multiSelect ? (
+                    <div className="flex items-center gap-3">
+                      <Button
+                        size="sm"
+                        onClick={confirmSelection}
+                        disabled={selectedOptions.length === 0 || agentBusy}
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        Confirm
+                        {selectedOptions.length > 0
+                          ? ` (${selectedOptions.length})`
+                          : ""}
+                      </Button>
+                      <span className="text-[11px] text-text-faint">
+                        Pick all that apply, or type your own answer below.
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
 
