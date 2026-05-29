@@ -234,6 +234,12 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
                       setName(event.target.value);
                       if (error) setError(null);
                     }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && nameValid && !isLoading) {
+                        event.preventDefault();
+                        void createDesign(null, (id) => `/editor/${id}`);
+                      }
+                    }}
                   />
                   {roomId ? (
                     <p className="text-xs text-text-muted">

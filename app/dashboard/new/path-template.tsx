@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   Check,
@@ -139,6 +139,26 @@ function TemplateChooser({
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
   const [complexity, setComplexity] = useState<TemplateComplexity | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  function handleCardKeyDown(event: React.KeyboardEvent) {
+    if (
+      !["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(event.key)
+    ) {
+      return;
+    }
+    const cards = Array.from(
+      gridRef.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]') ??
+        [],
+    );
+    if (cards.length === 0) return;
+    const active = cards.findIndex((el) => el === document.activeElement);
+    const forward = event.key === "ArrowRight" || event.key === "ArrowDown";
+    const next =
+      active < 0 ? 0 : (active + (forward ? 1 : -1) + cards.length) % cards.length;
+    event.preventDefault();
+    cards[next]?.focus();
+  }
 
   const categories = useMemo(() => {
     const set = new Set(CANVAS_TEMPLATES.map((t) => t.category));
@@ -251,9 +271,11 @@ function TemplateChooser({
         </div>
       ) : (
         <div
+          ref={gridRef}
           role="radiogroup"
           aria-label="Choose a template"
           className="grid gap-4 sm:grid-cols-2"
+          onKeyDown={handleCardKeyDown}
         >
           {filtered.map((template) => (
             <TemplateCard
@@ -300,7 +322,7 @@ function FilterChip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "rounded-full border px-3 py-1 font-mono text-[10px] tracking-[0.1em] uppercase transition-colors",
+        "rounded-full border px-3 py-1 font-mono text-[10px] tracking-[0.1em] uppercase transition-colors focus-visible:border-accent-primary/60 focus-visible:outline-none",
         active
           ? "border-accent-primary/40 bg-accent-primary-dim text-accent-primary"
           : "border-border-default bg-bg-surface text-text-muted hover:border-border-hover hover:text-text-secondary",
@@ -327,7 +349,7 @@ function TemplateCard({
       aria-checked={selected}
       onClick={onSelect}
       className={cn(
-        "group flex flex-col gap-3 rounded-2xl border bg-bg-surface p-4 text-left transition-colors",
+        "group flex flex-col gap-3 rounded-2xl border bg-bg-surface p-4 text-left transition-colors focus-visible:border-accent-primary/60 focus-visible:outline-none",
         selected
           ? "border-accent-primary/50 bg-accent-primary-dim"
           : "border-border-default hover:border-border-hover hover:bg-bg-elevated/40",

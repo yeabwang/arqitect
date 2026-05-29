@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { ArrowRight, LayoutTemplate, Sparkles, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { GenerationMode } from "@/types/onboarding";
@@ -45,6 +46,25 @@ const CARDS: Array<{
 ];
 
 export function OnboardingHub({ onChoose }: OnboardingHubProps) {
+  const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  function handleGridKeyDown(event: React.KeyboardEvent) {
+    const count = CARDS.length;
+    const active = cardRefs.current.findIndex(
+      (el) => el === document.activeElement,
+    );
+    let next = -1;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      next = active < 0 ? 0 : (active + 1) % count;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      next = active < 0 ? 0 : (active - 1 + count) % count;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    cardRefs.current[next]?.focus();
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-10 px-6 py-16">
       <div className="flex flex-col items-center gap-3 text-center">
@@ -60,16 +80,22 @@ export function OnboardingHub({ onChoose }: OnboardingHubProps) {
         </p>
       </div>
 
-      <div className="grid w-full gap-4 sm:grid-cols-3">
-        {CARDS.map((card) => {
+      <div
+        className="grid w-full gap-4 sm:grid-cols-3"
+        onKeyDown={handleGridKeyDown}
+      >
+        {CARDS.map((card, index) => {
           const Icon = card.icon;
           return (
             <button
               key={card.mode}
+              ref={(el) => {
+                cardRefs.current[index] = el;
+              }}
               type="button"
               onClick={() => onChoose(card.mode)}
               className={cn(
-                "group flex flex-col gap-4 rounded-2xl border bg-bg-surface p-5 text-left transition-colors",
+                "group flex flex-col gap-4 rounded-2xl border bg-bg-surface p-5 text-left transition-colors focus-visible:border-accent-primary/60 focus-visible:outline-none",
                 card.accent
                   ? "border-accent-primary/30 hover:border-accent-primary/60"
                   : "border-border-default hover:border-border-hover hover:bg-bg-elevated/40",

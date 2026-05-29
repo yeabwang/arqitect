@@ -426,7 +426,7 @@ export function PathPrompt({
                     key={option}
                     type="button"
                     onClick={() => pickOption(option)}
-                    className="rounded-lg border border-border-default bg-bg-surface px-3 py-1.5 text-xs text-text-secondary transition-colors hover:border-accent-primary/50 hover:text-text-primary"
+                    className="rounded-lg border border-border-default bg-bg-surface px-3 py-1.5 text-xs text-text-secondary transition-colors hover:border-accent-primary/50 hover:text-text-primary focus-visible:border-accent-primary/60 focus-visible:outline-none"
                   >
                     {option}
                   </button>
