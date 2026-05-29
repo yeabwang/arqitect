@@ -63,7 +63,7 @@ The dialog has two stages:
 
 **Stage 2: Guided pre-generation interview (prompt mode only)**
 
-The interview is a single scrollable form, not a multi-step wizard. It is short enough to complete in 90 seconds and skippable at any point. The fields map directly to the structured input the design generation task will consume in spec 03.
+A multi-step wizard. It is short enough to complete in 90 seconds and skippable at any point. The fields map directly to the structured input the design generation task will consume in spec 03. This should be desigend in a way thats feels like a team talking to them instead of traditional static form.
 
 Required (cannot be empty if the interview is submitted):
 
@@ -127,9 +127,9 @@ The AI sidebar in the editor is not running generation in this spec — it is sh
 
 #### Quick actions
 
-* `Blank canvas` → start-design dialog, blank preselected.
-* `Use template` → start-design dialog, template preselected. Remove the "Soon" badge if the template import path is available.
-* `Prompt Arqitect` → start-design dialog, prompt preselected.
+* `Blank canvas` → Directly create a empty canvas with the selected name.
+* `Use template` → Show a full modern designed popup with templates header. Here will be people can quickly check and select templates. Sice we haven't did the templates part leave it empty for jow
+* `Prompt Arqitect` → This should take them to the beautifully, modern design, developer first interation dialog in very modern, attractive way instead of doing it through one full traditional form lets do it through a form of interactive guide asking the people a question and letting them answer one at a time.
 * `Agents`, `Team`, `Usage`, `Audit logs`, `Storage`, `Settings` remain coming soon.
 
 #### Empty dashboard
@@ -143,7 +143,7 @@ The zero-design state is the most important onboarding surface. It should:
 
 #### Populated dashboard
 
-Existing layout. The "New design" button continues to open the start-design dialog. The three quick-action tiles remain available at the top.
+Existing layout. The "New design" button opens a short dialog box allowing them to select from the three quick actions in the modern way. The three quick-action tiles remain available at the top.
 
 ### UI Language
 
@@ -199,51 +199,3 @@ The interview intro line is deliberate. It is honest, technical, and respects th
 * No changes to auth, project access, Liveblocks token issuance, or canvas persistence.
 * No changes to the dashboard shell structure beyond copy and quick-action wiring.
 * No team or organization onboarding flow. Single-user start is the v1 surface.
-
-### Architecture Alignment Check
-
-| Architecture invariant                                         | This spec                                                                                                  |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 1. Request handlers do not run AI work                         | Honored. The dialog creates a project and a `PendingGeneration`row; no AI runs in the request path.      |
-| 2. Metadata and artifacts in separate layers                   | Honored.`PendingGeneration`is metadata in Postgres. No blob writes in this spec.                         |
-| 3. Auth and ownership at every mutation boundary               | Honored. Project creation and `PendingGeneration`creation use existing ownership checks.                 |
-| 7. AI clarify and review do not mutate the canvas              | Not in scope, but the interview pattern reinforces the principle: AI does not act until the user confirms. |
-| 9. Conversation, decisions, etc. are durable Postgres entities | The interview payload is durable Postgres state (`PendingGeneration`), not a transient URL parameter.    |
-| 14. Soft references handled gracefully                         | `PendingGeneration`cascades on project delete, expires after 24 hours, and is replaced if duplicated.    |
-
-### Persona Alignment Check
-
-| Persona need                                              | This spec                                                                                                 |
-| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Fast first draft from natural language                    | Prompt mode is one of three equally weighted entry paths.                                                 |
-| AI that asks clarifying questions instead of only drawing | The guided pre-generation interview is that question, moved earlier than the editor.                      |
-| Open questions and assumptions preserved as output        | Unanswered interview fields become open questions on the resulting canvas (executed in spec 03).          |
-| The product is not a generic whiteboard                   | Empty dashboard copy, dialog framing, and the spec-as-deliverable line all reinforce this from the start. |
-| Reach the success moment quickly                          | Three paths, no tutorial, interview takes 90 seconds maximum.                                             |
-
-### Definition of Done
-
-* Dashboard quick actions open the start-design dialog with the correct mode preselected.
-* Empty dashboard uses the new framing copy and three start paths.
-* Blank mode creates a project and opens an empty canvas.
-* Template mode creates a project, navigates with `start=template`, and the editor opens the template modal once.
-* Prompt mode without interview skip creates a project, persists a `PendingGeneration` row, navigates with `start=ai`, and the editor opens the AI sidebar with an editable preview of the interview answers.
-* Prompt mode with interview skip creates a project, persists a `PendingGeneration` row containing `rawPrompt`, and the editor opens the AI sidebar with the free-form prompt prefilled.
-* `PendingGeneration` rows expire after 24 hours and are cascade-deleted with the project.
-* Unknown `start` values are ignored without crashing the editor.
-* The AI sidebar confirm action is wired through to the existing generation path (or to a clearly labeled placeholder, with the real path arriving in spec 03).
-* TypeScript and build pass.
-* No regression in existing project creation, Liveblocks auth, or canvas persistence.
-
-### What Comes Next
-
-The remaining specs build on this foundation:
-
-* **Spec 02 — Templates as architecture starters.** Expand templates from canvas snapshots into structured bundles with assumptions, open questions, and clarifying questions. Connect to the template path established here.
-* **Spec 03 — AI design generation with structured input.** Consume the `PendingGeneration` payload, run the Trigger.dev generation task, populate canvas with v1 metadata, mark unanswered fields as open questions.
-* **Spec 04 — Project conversation as a first-class object.** Replace transient AI chat with persistent Postgres-backed conversation threaded to canvas elements.
-* **Spec 05 — Canvas metadata editing.** Build the UI for editing v1 node and edge metadata with the schema enforced.
-* **Spec 06 — Spec generation with versioning.** The deliverable promised in onboarding becomes real.
-* **Spec 07 — Decisions, assumptions, risks, and open questions.** First-class entity capture.
-* **Spec 08 — Review workflow with AI and human items unified.** Severity, gating, resolution.
-* **Spec 09 — Coding-agent handoff brief.** The differentiator artifact, with copyable agent prompt.

@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { cn } from "@/lib/utils";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/ui/themes";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const jetBrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
+const inter = localFont({
+  src: "../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2",
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const jetBrainsMono = localFont({
+  src: "../node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2",
   variable: "--font-jetbrains-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {

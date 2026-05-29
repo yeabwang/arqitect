@@ -12,6 +12,8 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Completed
 
+- prisma-dev-url-resolution: `lib/prisma.ts` now resolves the effective database URL at the Prisma boundary, preferring `DIRECT_DATABASE_URL` or `.env.local` during local development before falling back to `DATABASE_URL`, while preserving production `DATABASE_URL` behavior. Prisma client and `pg` pool caches are keyed by the effective URL so a dev server no longer reuses a stale Accelerate client after the local database URL changes. Focused tests cover the dev local override, explicit direct URL override, production behavior, and required delegate guard.
+
 - project-overview-architecture-alignment: Updated `context/project-overview.md` and `context/architecture-context.md` to match the researched Arqitect direction: structured architecture canvas, guided start paths, AI co-architect generation/clarification/review, decision and review capture, implementation-ready specs, and coding-agent handoff briefs. Architecture context now documents canvas metadata, Blob-backed generated artifacts, relational decisions/review items, AI review non-mutation rules, and handoff generation boundaries.
 
 - guideline-docs-agent-rules: Updated `context/code-standards.md`, `context/ui-context.md`, and `context/ai-workflow-rules.md` with agent-facing rules for file naming, product copy language, and centralized design-system usage. New guidance requires kebab-case responsibility-based files, precise engineering-audience UI copy, specific button/headline language, and centralized `app/globals.css` tokens for reusable colors, shadows, borders, state accents, and visual styles instead of one-off component definitions.
