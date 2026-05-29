@@ -140,7 +140,7 @@ function PreviewShape({ node }: { node: PreviewNode }) {
 // Self-scaling diagram preview. Computes diagram bounds from node footprints and
 // renders everything inside one SVG with a fitted viewBox, so it always fills
 // the card width without clipping and needs no React Flow instance.
-function TemplatePreview({ template }: { template: CanvasTemplate }) {
+export function TemplatePreview({ template }: { template: CanvasTemplate }) {
   const { nodes, edges, viewBox } = useMemo(() => {
     const previewNodes: PreviewNode[] = template.nodes.map((item) => {
       const fallback = DEFAULT_NODE_SIZES[item.data.shape];
