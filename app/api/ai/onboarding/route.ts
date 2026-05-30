@@ -143,12 +143,13 @@ export async function POST(request: NextRequest) {
     if (mode === "turn") {
       const { text } = await generateText({
         model,
-        system: buildTurnSystemPrompt(config.maxQuestions) + TURN_JSON_CONTRACT,
-        prompt: `${context}\n\nQuestions asked so far: ${transcript.length} of ${config.maxQuestions}.\nDecide the single most valuable next question, or set done=true.`,
+        system: buildTurnSystemPrompt() + TURN_JSON_CONTRACT,
+        prompt: `${context}\n\nQuestions asked so far: ${transcript.length}.\nDecide the single most valuable next question that moves toward a draftable architecture, or set done=true if you already have enough to draft one.`,
         temperature: config.turnTemperature,
       });
       const object = turnResultSchema.parse(extractJson(text));
-      const done = object.done || transcript.length >= config.maxQuestions;
+      // Agent owns convergence; maxTranscript is only a runaway-loop backstop.
+      const done = object.done || transcript.length >= config.maxTranscript;
       const options = done
         ? []
         : object.options.map((o) => o.trim()).filter((o) => o.length > 0);

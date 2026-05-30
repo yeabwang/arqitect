@@ -37,9 +37,10 @@ How a senior architect behaves here:
 /**
  * Per-turn instruction. The agent must ask EXACTLY ONE question (or decide it
  * has enough), so the experience is a real back-and-forth conversation rather
- * than a wall of questions.
+ * than a wall of questions. There is no fixed question budget — the agent
+ * itself drives the conversation to convergence.
  */
-export function buildTurnSystemPrompt(maxQuestions: number): string {
+export function buildTurnSystemPrompt(): string {
   return `${ARCHITECT_GUIDELINE}
 
 THIS TURN — produce the single next move in the conversation. Return these fields:
@@ -49,9 +50,12 @@ THIS TURN — produce the single next move in the conversation. Return these fie
 - multiSelect: set true ONLY when the question legitimately allows more than one answer — e.g. "Which of these will you integrate with?" or "Which platforms do you need to support?" — so the options behave as checkboxes the builder can tick several of. Set false for either/or decisions where exactly one choice makes sense, and false whenever options is empty.
 - rationale: one short clause on why this question matters now — shown subtly so the builder sees you are deliberate.
 
-Rules:
+Convergence — you own when this ends:
+- There is NO fixed question budget. YOU decide when the conversation is done. Drive it actively toward convergence: every single turn must close an architecture-shaping unknown and move closer to a draftable design. Never wander into nice-to-haves or trivia.
+- Hold the goal in view: enough structured understanding to draft a credible first architecture and the spec generated from it. Track which of the dimensions above actually matter for THIS system and whether each is answered or safely inferable.
+- Set done=true the moment you could credibly draft that first-pass architecture — do not keep going to be thorough. Remaining gaps become open questions in the brief, not extra turns.
+- Wrap up promptly if answers turn thin, vague, or repetitive, or the builder signals they want to move on. A focused kickoff beats an exhaustive interview — bias toward fewer, higher-leverage questions.
 - Lead with the recommendation when you have one, then ask the question that confirms or refines it.
-- Set done=true when you could credibly draft a first-pass architecture, or when the conversation has clearly given you enough. You may ask at most ${maxQuestions} questions in total; once that budget is reached, set done=true. Prefer to finish early over padding the conversation.
 - When done=true, return empty strings for recommendation, question, and rationale, and an empty options array.`;
 }
 
@@ -73,7 +77,11 @@ THE CONVERSATION IS COMPLETE — now write the architecture brief:
 }
 
 export interface OnboardingConfig {
-  maxQuestions: number;
+  /**
+   * Hard ceiling on transcript length. Doubles as a silent runaway-loop
+   * backstop — the agent normally converges and sets done well before this.
+   * It is NOT surfaced to the model as a question budget.
+   */
   maxTranscript: number;
   maxFieldChars: number;
   turnTemperature: number;
@@ -97,7 +105,6 @@ function envFloat(name: string, fallback: number): number {
 /** Read tunable onboarding-agent limits from the environment. */
 export function getOnboardingConfig(): OnboardingConfig {
   return {
-    maxQuestions: envInt("ONBOARDING_MAX_QUESTIONS", 5),
     maxTranscript: envInt("ONBOARDING_MAX_TRANSCRIPT", 16),
     maxFieldChars: envInt("ONBOARDING_MAX_FIELD_CHARS", 6000),
     turnTemperature: envFloat("ONBOARDING_TURN_TEMPERATURE", 0.5),

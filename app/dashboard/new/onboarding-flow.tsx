@@ -18,9 +18,18 @@ import { PathTemplate } from "./path-template";
 
 interface OnboardingFlowProps {
   initialPath: GenerationMode | null;
+  /** Resolved server-side so the prompt greeting renders without a client fetch. */
+  userName: string | null;
+  userImageUrl: string | null;
+  greeting: string;
 }
 
-export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
+export function OnboardingFlow({
+  initialPath,
+  userName,
+  userImageUrl,
+  greeting,
+}: OnboardingFlowProps) {
   const router = useRouter();
 
   const [path, setPath] = useState<GenerationMode | null>(initialPath);
@@ -142,6 +151,9 @@ export function OnboardingFlow({ initialPath }: OnboardingFlowProps) {
           nameValid={nameValid}
           isLoading={isLoading}
           createError={error}
+          userName={userName}
+          userImageUrl={userImageUrl}
+          greeting={greeting}
           phase={promptPhase}
           onPhaseChange={setPromptPhase}
           onNameChange={(value) => {
