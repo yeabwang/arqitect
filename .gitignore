@@ -56,6 +56,8 @@ docs/
 
 # graphify output
 graphify-out/
+context/design
 
 # reference design mockups (other project, not part of this codebase)
 context/feature_specs/image/
+.firecrawl
