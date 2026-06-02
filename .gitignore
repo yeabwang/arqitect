@@ -51,3 +51,13 @@ context/image/
 # trigger.dev
 .trigger
 context/Design System
+# Local design docs (untracked)
+docs/
+
+# graphify output
+graphify-out/
+context/design
+
+# reference design mockups (other project, not part of this codebase)
+context/feature_specs/image/
+.firecrawl

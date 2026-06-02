@@ -101,6 +101,50 @@ export async function getCurrentProjectIdentity(): Promise<ProjectAccessIdentity
   });
 }
 
+/**
+ * Lightweight display identity (name + avatar) for UI greetings. Reads from the
+ * session token claims first — zero backend round-trip — and only falls back to
+ * a single `currentUser()` fetch when the claims aren't populated yet.
+ *
+ * Kept separate from `getCurrentProjectIdentity` on purpose: that helper feeds
+ * access control (email matching) and must not skip the backend fetch. This one
+ * only powers cosmetic greetings, so a missing value degrades gracefully.
+ *
+ * Fast path requires the Clerk session token to expose the claims below
+ * (Dashboard → Sessions → Customize session token):
+ *   { "first_name": "{{user.first_name}}", "image_url": "{{user.image_url}}" }
+ */
+export async function getDisplayIdentity(): Promise<{
+  displayName: string | null;
+  avatarUrl: string | null;
+}> {
+  const { userId, sessionClaims } = await auth();
+  if (!userId) {
+    return { displayName: null, avatarUrl: null };
+  }
+
+  const claimName = readFirstClaim(sessionClaims, [
+    "first_name",
+    "given_name",
+    "name",
+    "username",
+  ]);
+  const claimAvatar =
+    readClaim(sessionClaims, "image_url") ?? readClaim(sessionClaims, "picture");
+
+  // Fast path: session token already carries a name — no backend fetch.
+  if (claimName) {
+    return { displayName: claimName, avatarUrl: claimAvatar };
+  }
+
+  // Claims not customized yet: one fetch keeps the greeting correct meanwhile.
+  const user = await currentUser().catch(() => null);
+  return {
+    displayName: user?.firstName ?? user?.fullName ?? user?.username ?? null,
+    avatarUrl: claimAvatar ?? user?.imageUrl ?? null,
+  };
+}
+
 export function hasProjectAccess(
   project: ProjectAccessRecord,
   identity: ProjectAccessIdentity

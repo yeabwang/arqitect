@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Check,
   Loader2,
+  Pencil,
   RefreshCw,
   SendHorizontal,
   Sparkles,
@@ -31,6 +32,10 @@ interface PathPromptProps {
   isLoading: boolean;
   /** Project-creation error surfaced by the parent flow. */
   createError?: string | null;
+  /** Identity + greeting resolved server-side (no client fetch / flicker). */
+  userName: string | null;
+  userImageUrl: string | null;
+  greeting: string;
   phase: PromptPhase;
   onPhaseChange: (phase: PromptPhase) => void;
   onNameChange: (value: string) => void;
@@ -52,6 +57,20 @@ interface SummaryResponse {
 }
 
 const MAX_PROMPT = 8000;
+
+// Varied opener for the "describe it" prompt so the agent feels human, not scripted.
+const DESCRIBE_OPENERS = [
+  "Great",
+  "Interesting",
+  "Hmm, I see",
+  "Cool",
+  "Nice",
+  "Love it",
+];
+
+function pickOpener(): string {
+  return DESCRIBE_OPENERS[Math.floor(Math.random() * DESCRIBE_OPENERS.length)];
+}
 
 const PHASE_ORDER: PromptPhase[] = ["name", "describe", "chat", "summary"];
 const PHASE_STEPS: { phase: PromptPhase; label: string }[] = [
@@ -78,11 +97,18 @@ export function PathPrompt({
   nameValid,
   isLoading,
   createError,
+  userName,
+  userImageUrl,
+  greeting,
   phase,
   onPhaseChange,
   onNameChange,
   onSubmit,
 }: PathPromptProps) {
+  const firstName = userName;
+  // Opener chosen when the user names the design (greeting comes from the server).
+  const [opener, setOpener] = useState(DESCRIBE_OPENERS[0]);
+
   const [input, setInput] = useState("");
   const [description, setDescription] = useState("");
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
@@ -191,6 +217,7 @@ export function PathPrompt({
     if (phase === "name") {
       onNameChange(value);
       setInput("");
+      setOpener(pickOpener());
       onPhaseChange("describe");
       return;
     }
@@ -370,25 +397,35 @@ export function PathPrompt({
         >
           <div className="mx-auto flex w-full max-w-[720px] flex-col gap-8 px-6 py-8">
             <ArchitectMessage>
-              I&rsquo;ll help you turn this into a system we can design and
-              generate a spec from. First — what should we call this design?
+              <span className="block">
+                {greeting}
+                {firstName ? `, ${firstName}` : ""}.
+              </span>
+              <span className="mt-1 block">
+                What are we working on today? Let&rsquo;s start by giving it a
+                name.
+              </span>
             </ArchitectMessage>
 
-            {named ? <YouMessage>{name}</YouMessage> : null}
+            {named ? (
+              <YouMessage avatarUrl={userImageUrl}>{name}</YouMessage>
+            ) : null}
 
             {named ? (
               <ArchitectMessage>
-                Good. Now, in your own words — what are you building? A few
-                sentences is plenty.
+                {opener}, can you give me a short intro on it? A few sentences is
+                plenty.
               </ArchitectMessage>
             ) : null}
 
-            {described ? <YouMessage>{description}</YouMessage> : null}
+            {described ? (
+              <YouMessage avatarUrl={userImageUrl}>{description}</YouMessage>
+            ) : null}
 
             {transcript.map((entry, index) => (
               <div key={index} className="flex flex-col gap-8">
                 <ArchitectMessage>{entry.question}</ArchitectMessage>
-                <YouMessage muted={!entry.answer}>
+                <YouMessage muted={!entry.answer} avatarUrl={userImageUrl}>
                   {entry.answer || "Skipped"}
                 </YouMessage>
               </div>
@@ -422,29 +459,56 @@ export function PathPrompt({
             ) : null}
 
             {phase === "summary" ? (
-              <div className="flex flex-col gap-4 pl-10">
-                <Textarea
-                  value={summary}
-                  onChange={(event) => setSummary(event.target.value)}
-                  className="min-h-[240px] resize-y bg-bg-elevated font-mono text-[13px] leading-relaxed"
-                />
-                {openQuestions.length > 0 ? (
-                  <div className="flex flex-col gap-2 rounded-xl border border-border-default bg-bg-surface p-4">
-                    <span className="font-mono text-[10px] tracking-[0.14em] text-text-muted uppercase">
-                      Open questions
+              <div className="flex flex-col gap-4">
+                {/* Architecture brief — editable document surface */}
+                <div className="overflow-hidden rounded-2xl border border-border-default bg-bg-elevated">
+                  <div className="flex items-center justify-between gap-3 border-b border-border-faint px-4 py-2.5">
+                    <span className="font-mono text-[10px] tracking-[0.18em] text-text-muted uppercase">
+                      Architecture brief
                     </span>
-                    <ul className="flex flex-col gap-1.5">
+                    <span className="inline-flex items-center gap-1.5 text-[10px] text-text-faint">
+                      <Pencil className="h-3 w-3" />
+                      Editable
+                    </span>
+                  </div>
+                  <Textarea
+                    value={summary}
+                    aria-label="Architecture brief"
+                    onChange={(event) => setSummary(event.target.value)}
+                    className="min-h-[320px] resize-y rounded-none border-0 bg-transparent px-4 py-4 font-mono text-[13px] leading-relaxed focus-visible:border-transparent focus-visible:ring-0"
+                  />
+                </div>
+
+                {/* Open questions */}
+                {openQuestions.length > 0 ? (
+                  <div className="overflow-hidden rounded-2xl border border-border-default bg-bg-surface">
+                    <div className="flex items-center gap-2 border-b border-border-faint px-4 py-2.5">
+                      <span
+                        aria-hidden
+                        className="inline-block h-1.5 w-1.5 rounded-full bg-state-warning"
+                      />
+                      <span className="font-mono text-[10px] tracking-[0.18em] text-text-muted uppercase">
+                        Open questions
+                      </span>
+                      <span className="ml-auto font-mono text-[10px] text-text-faint">
+                        {openQuestions.length}
+                      </span>
+                    </div>
+                    <ul className="flex flex-col">
                       {openQuestions.map((q) => (
                         <li
                           key={q}
-                          className="flex gap-2 text-xs leading-relaxed text-text-secondary"
+                          className="flex gap-2.5 border-b border-border-faint px-4 py-3 text-xs leading-relaxed text-text-secondary last:border-b-0"
                         >
-                          <span className="mt-1 inline-block h-1 w-1 shrink-0 rounded-full bg-state-warning" />
+                          <span
+                            aria-hidden
+                            className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-state-warning"
+                          />
                           {q}
                         </li>
                       ))}
                     </ul>
-                    <p className="text-[11px] text-text-faint">
+                    <p className="border-t border-border-faint px-4 py-2.5 text-[11px] text-text-faint">
                       These carry onto the canvas as open questions instead of
                       being guessed.
                     </p>
@@ -630,16 +694,6 @@ export function PathPrompt({
                 <p className="text-[11px] text-text-faint">
                   Enter to send · Shift + Enter for a new line
                 </p>
-                {phase === "describe" ? (
-                  <button
-                    type="button"
-                    onClick={skipToCanvas}
-                    disabled={input.trim().length === 0 || isLoading}
-                    className="text-[11px] text-text-muted underline-offset-4 transition-colors hover:text-text-secondary hover:underline disabled:opacity-50"
-                  >
-                    Skip questions, open the canvas
-                  </button>
-                ) : null}
                 {phase === "chat" && question && !agentBusy ? (
                   <div className="flex items-center gap-4">
                     <button
@@ -723,17 +777,12 @@ function PhaseProgress({ phase }: { phase: PromptPhase }) {
 
 function ArchitectMessage({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-3">
-      <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-accent-primary/30 bg-accent-primary-dim text-accent-primary">
+    <div className="flex items-center gap-3">
+      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-accent-primary/30 bg-accent-primary-dim text-accent-primary">
         <Sparkles className="h-3.5 w-3.5" />
       </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <span className="font-mono text-[10px] tracking-[0.18em] text-text-muted uppercase">
-          Arqitect
-        </span>
-        <div className="text-sm leading-relaxed text-text-primary">
-          {children}
-        </div>
+      <div className="max-w-[80%] rounded-2xl border border-accent-primary/20 bg-accent-primary-dim px-3.5 py-2.5 text-sm leading-relaxed text-text-primary">
+        {children}
       </div>
     </div>
   );
@@ -742,15 +791,26 @@ function ArchitectMessage({ children }: { children: React.ReactNode }) {
 function YouMessage({
   children,
   muted,
+  avatarUrl,
 }: {
   children: React.ReactNode;
   muted?: boolean;
+  avatarUrl?: string | null;
 }) {
   return (
     <div className="flex flex-row-reverse items-center gap-3">
-      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border-default bg-bg-elevated text-text-muted">
-        <User className="h-3.5 w-3.5" />
-      </span>
+      {avatarUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={avatarUrl}
+          alt=""
+          className="h-7 w-7 shrink-0 rounded-lg border border-border-default object-cover"
+        />
+      ) : (
+        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border-default bg-bg-elevated text-text-muted">
+          <User className="h-3.5 w-3.5" />
+        </span>
+      )}
       <div
         className={cn(
           "max-w-[80%] rounded-2xl border border-border-default bg-bg-surface px-3.5 py-2.5 text-sm leading-relaxed",
