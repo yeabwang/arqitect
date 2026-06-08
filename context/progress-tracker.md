@@ -4,13 +4,15 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Phase
 
-- Full-screen guided onboarding redesign complete; onboarding back-navigation runtime stability fixes complete.
+- Developer documentation refresh complete.
 
 ## Current Goal
 
-- Dashboard create actions now route to `/dashboard/new`, a full-screen onboarding surface with hub cards, a two-column path view, right-rail progress, blank/template/prompt paths, and editor handoff for template auto-import or existing `?start=ai` pending-generation review. Authenticated back-navigation is resilient to transient Clerk Backend API fetch failures and intermittent Prisma Postgres direct connection drops. AI generation execution remains deferred to spec 03.
+- Repository onboarding docs now reflect the current implementation: setup, architecture, API/data, and contribution workflow.
 
 ## Completed
+
+- 2026-06-08-developer-docs: Added compact developer documentation under `docs/`: `README.md`, `getting-started.md`, `architecture.md`, `api-reference.md`, and `contributing.md`. Added a brand banner `docs/assets/logo.svg` (Dark Blueprint: black panel + white three-bar mark + `ARQITECT.` wordmark with muted period + mono tagline) so the logo stays visible on any GitHub theme — the bare Design System `wordmark.svg` is white and invisible on light backgrounds. Root `README.md` polished to a developer-first landing (logo banner, one-line pitch, stack line, quick start, docs links, commands); `docs/README.md` also references `logo.svg`. `.gitignore` now tracks `logo.svg` alongside the docs set while leaving local/generated docs ignored. Documentation is scoped to implemented behavior and calls out current gaps against the broader product context.
 
 - 2026-05-30-onboarding-remove-question-cap: Removed the hard question cap from the onboarding agent — it was force-setting `done` at `transcript.length >= maxQuestions` (default 5), which could cut the kickoff off mid-convergence. Now the agent owns when the conversation ends. `lib/onboarding-agent.ts`: `buildTurnSystemPrompt()` no longer takes `maxQuestions`; its rules were replaced with a "Convergence — you own when this ends" block (no fixed budget; every turn must close an architecture-shaping unknown; set done the moment a credible first-pass architecture is draftable; remaining gaps become open questions; wrap up if answers turn thin or the builder wants to move on; bias to fewer, higher-leverage questions). `OnboardingConfig.maxQuestions` and env `ONBOARDING_MAX_QUESTIONS` dropped; `maxTranscript` (default 16) now doubles as a silent runaway-loop backstop and is NOT surfaced to the model. `route.ts`: prompt no longer states a budget ("Questions asked so far: N." with goal-framing instead of "N of M"); `done = object.done || transcript.length >= config.maxTranscript`. The user-driven "Draft the brief" early-finish button is unchanged. `.env.local` still has a now-unused `ONBOARDING_MAX_QUESTIONS` line (harmless). `tsc` + ESLint clean.
 

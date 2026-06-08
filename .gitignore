@@ -51,8 +51,6 @@ context/image/
 # trigger.dev
 .trigger
 context/Design System
-# Local design docs (untracked)
-docs/
 
 # graphify output
 graphify-out/
