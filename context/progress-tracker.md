@@ -4,13 +4,17 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Phase
 
-- Developer documentation refresh complete.
+- Full-development spec series authored; implementation of Phase A (foundation) is next.
 
 ## Current Goal
 
-- Repository onboarding docs now reflect the current implementation: setup, architecture, API/data, and contribution workflow.
+- Implement `context/feature_specs/34-full-dev.md` Phase A units in order: 35 (metadata contract) → 36 (inspector) → 37 (versioned snapshots) → 38 (design data foundation) → 39 (durable conversation).
 
 ## Completed
+
+- 2026-06-10-full-dev-spec-amendments: Production-grade evaluation pass over the 34–53 series produced four amendment sets, applied: (1) **Section editability** — AI-generated `DesignSection` content is no longer regenerate-only: spec 44 adds structured editing for all five HLD section types and spec 48 adds it for `data-model` + `api-contract` (the content feeding spec §7/§8 and handoff contracts); shared zod-validated PATCH route, version bump, `source` → HUMAN, regenerate-over-edits warning. Recorded as cross-cutting rule 10 in 34. (2) **Proposed-decision surfacing** — spec 43's completion flow prompts review of `PROPOSED` decisions with inline accept/edit/supersede (spec-40 machinery), and spec 49's compiler labels unaccepted decisions `Proposed — not yet confirmed` (rule 11). (3) **Concurrency + version race** — per-project Trigger.dev queue (`concurrencyLimit: 1`) on all canvas-mutating/compiling tasks (rule 8; wired in 43/44/47/49/51), `@@unique([projectId, version])` on `ProjectSpec` with transactional version assignment (38/49). (4) **Cost + context control** — per-project AI rate caps via a `TaskRun.taskKind` ledger and `lib/ai-rate-limit.ts` (rule 9; `TaskRun` column added in 38), and explicit token budgets + truncation order + truncation provenance for the spec compiler (49). Also added: end-to-end Playwright journey gate after Phase E (34 §7).
+
+- 2026-06-10-full-dev-spec-series: Authored the complete implementation spec series for the remaining product: `context/feature_specs/34-full-dev.md` (master plan: current-state audit, target system design, book model, AI crew table, workspace IA, phase/dependency map, cross-cutting rules, deferred list) plus 19 implementation units `35-canvas-metadata-contract.md`, `36-metadata-inspector.md`, `37-canvas-snapshot-versioning.md`, `38-design-data-foundation.md`, `39-project-conversation.md`, `40-decision-log.md`, `41-review-workflow.md`, `42-requirements-phase.md`, `43-hld-designer-v2.md`, `44-hld-sections-and-capacity.md`, `45-ai-clarify-mode.md`, `46-ai-review-mode.md`, `47-lld-chapter-generation.md`, `48-lld-chapter-ui.md`, `49-spec-compiler-v2.md`, `50-spec-history-and-sharing.md`, `51-handoff-brief.md`, `52-canvas-views.md`, `53-template-library-v2.md`. Specs are grounded in the research briefs (`context/design/research/01–04`), the phase content contract (`context/design/phase-content-spec.md`), the sysdesai competitor teardown, and the current codebase (routes, models, tasks, hooks audited). Key binding decisions recorded in 34: LLD chapters are structured `DesignSection` documents (not child canvases) at launch; the mutable autosave working copy stays alongside append-only immutable snapshots on a defined cadence; spec generation is deterministic compilation with exactly three constrained LLM narrative passes; right-sidebar IA is `Arqitect | Design | Review | Artifacts`; edge protocol enum gains `websocket`/`sse` and nodes gain optional `storageEngine` (architecture-context update lands with spec 35).
 
 - 2026-06-08-developer-docs: Added compact developer documentation under `docs/`: `README.md`, `getting-started.md`, `architecture.md`, `api-reference.md`, and `contributing.md`. Added a brand banner `docs/assets/logo.svg` (Dark Blueprint: black panel + white three-bar mark + `ARQITECT.` wordmark with muted period + mono tagline) so the logo stays visible on any GitHub theme — the bare Design System `wordmark.svg` is white and invisible on light backgrounds. Root `README.md` polished to a developer-first landing (logo banner, one-line pitch, stack line, quick start, docs links, commands); `docs/README.md` also references `logo.svg`. `.gitignore` now tracks `logo.svg` alongside the docs set while leaving local/generated docs ignored. Documentation is scoped to implemented behavior and calls out current gaps against the broader product context.
 
@@ -158,11 +162,14 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
+- Spec 35 — canvas metadata contract (types, zod, completeness helpers, architecture-context amendments).
 - Dedicated pricing route and customer proof/trust signals, when product inputs are ready.
 
 ## Open Questions
 
-- Add unresolved product or implementation questions here.
+- `context/feature_specs/33-improving-and-elements.md` is an empty 0-byte file — confirm whether it has pending content or should be deleted.
+- Spec 50 ships unauthenticated read-only share links (token-based, revocable, no expiry). Confirm this privacy posture is acceptable before implementing, or require expiry.
+- Snapshot retention (spec 37) is unlimited at launch — revisit a retention/compaction policy once Blob usage data exists.
 
 ## Architecture Decisions
 
