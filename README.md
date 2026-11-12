@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  Real-time collaborative system-design workspace — turn architecture conversations into an editable canvas and implementation-ready Markdown specs.
+  Real-time collaborative system-design workspace  :  turn architecture conversations into an editable canvas and implementation-ready Markdown specs.
 </p>
 
 <p align="center">
@@ -26,15 +26,15 @@ npm run dev          # Next.js app
 npm run trigger:dev  # Trigger.dev workers (AI design + spec generation)
 ```
 
-Set env vars first — see [Getting started](./docs/getting-started.md).
+Set env vars first  :  see [Getting started](./docs/getting-started.md).
 
 ## Developer docs
 
 - [Docs index](./docs/README.md)
-- [Getting started](./docs/getting-started.md) — install, env, Prisma, local servers
-- [Architecture](./docs/architecture.md) — boundaries, state layers, main flows
-- [API and data](./docs/api-reference.md) — routes, Trigger tasks, Prisma models
-- [Contributing](./docs/contributing.md) — repo rules, docs, verification
+- [Getting started](./docs/getting-started.md)  :  install, env, Prisma, local servers
+- [Architecture](./docs/architecture.md)  :  boundaries, state layers, main flows
+- [API and data](./docs/api-reference.md)  :  routes, Trigger tasks, Prisma models
+- [Contributing](./docs/contributing.md)  :  repo rules, docs, verification
 
 The broader product contract (full feature scope, metadata schema, review model) lives in [`context/`](./context).
 
