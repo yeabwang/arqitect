@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  Real-time collaborative system-design workspace  :  turn architecture conversations into an editable canvas and implementation-ready Markdown specs.
+  Real-time collaborative system-design workspace; turn architecture conversations into an editable canvas and implementation-ready Markdown specs.
 </p>
 
 <p align="center">
